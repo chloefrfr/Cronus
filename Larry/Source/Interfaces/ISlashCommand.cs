@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 
 namespace Larry.Source.Interfaces
 {
@@ -6,6 +7,8 @@ namespace Larry.Source.Interfaces
     {
         string Name { get; }
         string Description { get; }
+        List<SlashCommandOptionBuilder> Options { get; }
+
         Task BuildAsync(SocketSlashCommand command);
     }
 }

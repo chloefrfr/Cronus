@@ -19,5 +19,21 @@ namespace Larry.Source.Utilities
             var json = File.ReadAllText(configFile);
             return JsonConvert.DeserializeObject<Config>(json);
         }
+
+        public static Config GetConfig()
+        {
+            Config config;
+
+            try
+            {
+                config = Config.Load();
+                return config;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to load config: {ex.Message}");
+                throw new Exception();
+            }
+        }
     }
 }

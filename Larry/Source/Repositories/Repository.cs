@@ -58,6 +58,56 @@ namespace Larry.Source.Repositories
         }
 
         /// <summary>
+        /// Finds an entity by its DiscordId asynchronously.
+        /// Available only for User entities.
+        /// </summary>
+        /// <param name="discordId">The Discord ID of the user.</param>
+        /// <returns>The user instance if found; otherwise, null.</returns>
+        public async Task<TEntity> FindByDiscordIdAsync(string discordId)
+        {
+            if (typeof(TEntity) != typeof(User))
+                throw new InvalidOperationException("This method is only available for User entities.");
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var entity = new TEntity();
+            var tableName = EntityMapper.GetTableName(entity);
+            var query = $"SELECT * FROM {tableName} WHERE discordid = @discordId";
+
+            using var command = new NpgsqlCommand(query, connection);
+            command.Parameters.AddWithValue("@discordId", discordId);
+
+            using var reader = await command.ExecuteReaderAsync();
+            return await EntityMapper.MapToEntityAsync<TEntity>(reader);
+        }
+
+        /// <summary>
+        /// Finds an entity by its Email asynchronously.
+        /// Available only for User entities.
+        /// </summary>
+        /// <param name="email">The email of the user.</param>
+        /// <returns>The user instance if found; otherwise, null.</returns>
+        public async Task<TEntity> FindByEmailAsync(string email)
+        {
+            if (typeof(TEntity) != typeof(User))
+                throw new InvalidOperationException("This method is only available for User entities.");
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var entity = new TEntity();
+            var tableName = EntityMapper.GetTableName(entity);
+            var query = $"SELECT * FROM {tableName} WHERE email = @Email";
+
+            using var command = new NpgsqlCommand(query, connection);
+            command.Parameters.AddWithValue("@Email", email);
+
+            using var reader = await command.ExecuteReaderAsync();
+            return await EntityMapper.MapToEntityAsync<TEntity>(reader);
+        }
+
+        /// <summary>
         /// Deletes an entity by its unique identifier asynchronously.
         /// </summary>
         /// <param name="id">The unique identifier of the entity to delete.</param>

@@ -73,12 +73,19 @@ namespace Larry.Source.Discord
 
             foreach (var command in _commands.Values)
             {
-                var slashCommand = new SlashCommandBuilder()
+                var slashCommandBuilder = new SlashCommandBuilder()
                     .WithName(command.Name)
-                    .WithDescription(command.Description)
-                    .Build();
+                    .WithDescription(command.Description);
 
-                await guild.CreateApplicationCommandAsync(slashCommand);
+                if (command.Options != null)
+                {
+                    foreach (var option in command.Options)
+                    {
+                        slashCommandBuilder.AddOption(option);
+                    }
+                }
+
+                await guild.CreateApplicationCommandAsync(slashCommandBuilder.Build());
             }
 
             Logger.Information("All slash commands registered!");

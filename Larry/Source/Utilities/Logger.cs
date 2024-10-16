@@ -7,8 +7,8 @@ namespace Larry.Source.Utilities
         static Logger()
         {
             Log.Logger = new LoggerConfiguration()
-                            .MinimumLevel.Information() 
-                            .WriteTo.Console() 
+                            
+                            .WriteTo.Console()
                             .CreateLogger();
         }
 
