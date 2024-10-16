@@ -9,6 +9,7 @@ using System.Transactions;
 using Cronus.Source.Database.Attributes;
 using Cronus.Source.Database.Entities;
 using Cronus.Source.Repositories;
+using Cronus.Source.Utilities;
 
 namespace Cronus.Source.Database
 {
@@ -32,7 +33,7 @@ namespace Cronus.Source.Database
             _connection = new NpgsqlConnection(connectionString);
             _connection.Open();
 
-            Log.Information("Database connection opened.");
+            Logger.Information("Database connection opened.");
 
             CreateTables();
         }
@@ -52,8 +53,161 @@ namespace Cronus.Source.Database
 
             foreach (var entityType in entityTypes)
             {
+                CreateOrUpdateTable(entityType);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new table or updates an existing table based on the specified entity type.
+        /// </summary>
+        /// <param name="entityType">The type of the entity to create or update.</param>
+        private void CreateOrUpdateTable(Type entityType)
+        {
+            var tableName = entityType.GetCustomAttribute<EntityAttribute>()?.TableName;
+
+            if (string.IsNullOrEmpty(tableName))
+            {
+                Logger.Error($"Entity '{entityType.Name}' does not have a TableAttribute specified.");
+                return;
+            }
+
+            if (!TableExists(tableName))
+            {
                 CreateTable(entityType);
             }
+            else
+            {
+                UpdateTable(entityType, tableName);
+            }
+        }
+
+        /// <summary>
+        /// Updates the specified table by adding any new columns based on the entity properties.
+        /// </summary>
+        /// <param name="entityType">The type of the entity whose properties to check.</param>
+        /// <param name="tableName">The name of the table to update.</param>
+        private void UpdateTable(Type entityType, string tableName)
+        {
+            var existingColumns = GetExistingColumns(tableName).Select(c => c.ToLower()).ToList();
+            var newColumns = entityType.GetProperties()
+                .Where(p => p.Name != "Id")
+                .Select(p => new
+                {
+                    Name = p.GetCustomAttribute<ColumnAttribute>()?.ColumnName?.ToLower() ?? p.Name.ToLower(),
+                    Type = GetPostgresType(p.PropertyType)
+                }).ToList();
+
+            bool isUpdated = false;
+
+            foreach (var column in newColumns)
+            {
+                if (!existingColumns.Contains(column.Name))
+                {
+                    var sql = $"ALTER TABLE {tableName} ADD COLUMN \"{column.Name}\" {column.Type};"; 
+                    try
+                    {
+                        using (var command = new NpgsqlCommand(sql, _connection))
+                        {
+                            command.ExecuteNonQuery();
+                            Logger.Information($"Column {column.Name} added to table {tableName}.");
+                            isUpdated = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Error adding column {column.Name} to table {tableName}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    if (!IsColumnTypeMatching(tableName, column.Name, column.Type))
+                    {
+                        var alterSql = $"ALTER TABLE {tableName} ALTER COLUMN \"{column.Name}\" TYPE {column.Type};";
+                        try
+                        {
+                            using (var command = new NpgsqlCommand(alterSql, _connection))
+                            {
+                                command.ExecuteNonQuery();
+                                isUpdated = true;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"Error altering column {column.Name} in table {tableName}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            if (isUpdated)
+            {
+                var migrationName = $"{entityType.Name} - {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
+                var migrationSql = $"INSERT INTO migrations (name, created_at) VALUES ('{migrationName}', '{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}');";
+
+                try
+                {
+                    using (var command = new NpgsqlCommand(migrationSql, _connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Error recording migration: {ex.Message}");
+                }
+            }
+        }
+
+
+
+        /// <summary>
+        /// Checks if the column type matches the specified type in the database.
+        /// </summary>
+        /// <param name="tableName">The name of the table to check.</param>
+        /// <param name="columnName">The name of the column to check.</param>
+        /// <param name="expectedType">The expected PostgreSQL type of the column.</param>
+        /// <returns>True if the column type matches; otherwise, false.</returns>
+        private bool IsColumnTypeMatching(string tableName, string columnName, string expectedType)
+        {
+            var sql = $@"
+                SELECT data_type 
+                FROM information_schema.columns 
+                WHERE table_name = '{tableName}' AND column_name = '{columnName}';";
+
+            using (var command = new NpgsqlCommand(sql, _connection))
+            using (var reader = command.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    var actualType = reader.GetString(0);
+                    return actualType.Equals(expectedType, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return false;
+        }
+
+
+        /// <summary>
+        /// Gets the existing columns for a specified table.
+        /// </summary>
+        /// <param name="tableName">The name of the table to check for existing columns.</param>
+        /// <returns>A set of existing column names.</returns>
+        private HashSet<string> GetExistingColumns(string tableName)
+        {
+            var columns = new HashSet<string>();
+            var sql = $"SELECT column_name FROM information_schema.columns WHERE table_name = '{tableName}';";
+            using (var command = new NpgsqlCommand(sql, _connection))
+            {
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        columns.Add(reader.GetString(0));
+                    }
+                }
+            }
+            return columns;
         }
 
         /// <summary>
@@ -66,21 +220,21 @@ namespace Cronus.Source.Database
 
             if (string.IsNullOrEmpty(tableName))
             {
-                Log.Error($"Entity '{entityType.Name}' does not have a TableAttribute specified.");
+                Logger.Error($"Entity '{entityType.Name}' does not have a TableAttribute specified.");
                 return;
             }
 
             if (TableExists(tableName))
             {
-                Log.Information($"Table '{tableName}' already exists.");
+                Logger.Information($"Table '{tableName}' already exists.");
                 return;
             }
 
             var columns = entityType.GetProperties()
-                .Where(p => p.Name != "Id") // Exclude Id to avoid duplicates
+                .Where(p => p.Name != "Id") 
                 .Select(p => $"{p.GetCustomAttribute<ColumnAttribute>()?.ColumnName ?? p.Name} {GetPostgresType(p.PropertyType)}");
 
-            var primaryKey = "Id SERIAL PRIMARY KEY"; // Define Id here
+            var primaryKey = "Id SERIAL PRIMARY KEY"; 
             var sql = $"CREATE TABLE IF NOT EXISTS {tableName} ({primaryKey}, {string.Join(", ", columns)});";
 
             try
@@ -88,12 +242,12 @@ namespace Cronus.Source.Database
                 using (var command = new NpgsqlCommand(sql, _connection))
                 {
                     command.ExecuteNonQuery();
-                    Log.Information($"Table {tableName} created.");
+                    Logger.Information($"Table {tableName} created.");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error($"Error creating table {tableName}: {ex.Message}");
+                Logger.Error($"Error creating table {tableName}: {ex.Message}");
             }
         }
 
@@ -121,9 +275,8 @@ namespace Cronus.Source.Database
             if (type.IsArray)
             {
                 var elementType = type.GetElementType();
-
-                var postgesType = GetPostgresType(elementType);
-                return $"{postgesType}[]";
+                var postgresType = GetPostgresType(elementType);
+                return $"{postgresType}[]";
             }
 
             var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
@@ -137,9 +290,15 @@ namespace Cronus.Source.Database
                 Type t when t == typeof(float) => "REAL",
                 Type t when t == typeof(bool) => "BOOLEAN",
                 Type t when t == typeof(DateTime) => "TIMESTAMP",
+                Type t when t == typeof(decimal) => "DECIMAL", 
+                Type t when t == typeof(short) => "SMALLINT", 
+                Type t when t == typeof(byte) => "BYTEA", 
+                Type t when t == typeof(char) => "CHAR", 
+                Type t when t == typeof(Guid) => "UUID",
                 _ => "TEXT" // Fallback for unsupported types.
             };
         }
+
 
         /// <summary>
         /// Gets the repository for the specified entity type.
