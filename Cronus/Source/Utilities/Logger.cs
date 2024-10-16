@@ -6,7 +6,10 @@ namespace Cronus.Source.Utilities
     {
         static Logger()
         {
-            Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
+            Log.Logger = new LoggerConfiguration()
+                            .MinimumLevel.Information() 
+                            .WriteTo.Console() 
+                            .CreateLogger();
         }
 
         public static void Information(string message)
