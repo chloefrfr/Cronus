@@ -4,6 +4,7 @@ using Larry.Source.Database.Entities;
 using Larry.Source.Repositories;
 using Larry.Source.Utilities;
 using Microsoft.AspNetCore;
+using Larry.Source.Discord;
 
 namespace Larry
 {
@@ -13,9 +14,19 @@ namespace Larry
         {
             try
             {
-                string connectionString = "Host=localhost;Port=5432;Database=dbtest;Username=postgres;Password=a";
+                Config config;
 
-                using var dbContext = new DatabaseContext(connectionString);
+                try
+                {
+                    config = Config.Load();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to load config: {ex.Message}");
+                    return;
+                }
+
+                using var dbContext = new DatabaseContext(config.ConnectionUrl);
 
                 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,11 +36,17 @@ namespace Larry
 
                 var app = builder.Build();
 
-           
+
                 app.UseHttpsRedirection();
                 app.UseAuthorization();
                 app.MapControllers();
-                app.Run();
+
+                var bot = new Bot();
+
+                var botTask = bot.RunAsync(config.Token);
+                var webAppTask = app.RunAsync();
+
+                await Task.WhenAll(botTask, webAppTask);
             }
             catch (Exception ex)
             {
