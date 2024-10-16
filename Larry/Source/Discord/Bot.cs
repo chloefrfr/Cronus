@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Larry.Source.Interfaces;
 using Larry.Source.Utilities;
+using System.Reflection;
 
 namespace Larry.Source.Discord
 {
@@ -8,6 +10,7 @@ namespace Larry.Source.Discord
     {
         private readonly DiscordSocketClient _client;
         private readonly IServiceProvider _services;
+        private readonly Dictionary<string, ISlashCommand> _commands = new();
 
         public Bot()
         {
@@ -41,10 +44,11 @@ namespace Larry.Source.Discord
         private async Task ReadyAsync()
         {
             Logger.Information("Bot is connected.");
+
+            LoadSlashCommands();
             await RegisterSlashCommandsAsync();
 
             await _client.SetGameAsync("Larry", type: ActivityType.Playing);
-            Logger.Information("Slash commands registered!");
         }
 
         private async Task RegisterSlashCommandsAsync()
@@ -67,29 +71,42 @@ namespace Larry.Source.Discord
                 return;
             }
 
-            var commands = new[]
+            foreach (var command in _commands.Values)
             {
-                new SlashCommandBuilder()
-                .WithName("hello")
-                .WithDescription("Says hello to the user.")
-                .Build()
-            };
+                var slashCommand = new SlashCommandBuilder()
+                    .WithName(command.Name)
+                    .WithDescription(command.Description)
+                    .Build();
 
-            foreach (var command in commands)
-            {
-                await guild.CreateApplicationCommandAsync(command);
+                await guild.CreateApplicationCommandAsync(slashCommand);
             }
 
-            Logger.Information("Slash commands registered!");
+            Logger.Information("All slash commands registered!");
+        }
+
+        private void LoadSlashCommands()
+        {
+            var commandTypes = Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(t => typeof(ISlashCommand).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+            foreach (var type in commandTypes)
+            {
+                var command = (ISlashCommand)Activator.CreateInstance(type);
+                _commands[command.Name] = command;
+                Logger.Information($"Loaded slash command: {command.Name}");
+            }
         }
 
         private async Task HandleSlashCommandAsync(SocketSlashCommand command)
         {
-            switch (command.Data.Name)
+            if (_commands.TryGetValue(command.Data.Name, out var slashCommand))
             {
-                case "hello":
-                    await command.RespondAsync($"Hello {command.User.Mention}");
-                    break;
+                await slashCommand.BuildAsync(command);
+            }
+            else
+            {
+                await command.RespondAsync("Unknown command.");
             }
         }
     }
