@@ -18,16 +18,7 @@ namespace Cronus
                 using var dbContext = new DatabaseContext(connectionString);
                 var userRepository = new Repository<User>(connectionString);
 
-                var newUser = new User
-                {
-                    Username = "hi",
-                    Email = "hi@hi.com",
-                    Password = "hihihi"
-                };
-
-                await userRepository.SaveAsync(newUser);
-                Logger.Information($"User {newUser.Username} created with ID: {newUser.Id}");
-
+                
                 var builder = WebApplication.CreateBuilder(args);
 
                 builder.Services.AddControllers();

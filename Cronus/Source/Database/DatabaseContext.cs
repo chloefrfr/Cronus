@@ -118,7 +118,17 @@ namespace Cronus.Source.Database
         /// <returns>The corresponding PostgreSQL type as a string.</returns>
         private string GetPostgresType(Type type)
         {
-            return type switch
+            if (type.IsArray)
+            {
+                var elementType = type.GetElementType();
+
+                var postgesType = GetPostgresType(elementType);
+                return $"{postgesType}[]";
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
+
+            return underlyingType switch
             {
                 Type t when t == typeof(string) => "VARCHAR",
                 Type t when t == typeof(int) => "INTEGER",
