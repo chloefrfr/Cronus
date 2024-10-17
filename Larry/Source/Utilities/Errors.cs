@@ -71,7 +71,7 @@ namespace Larry.Source.Utilities
         }
 
         /// <summary>
-        /// Retrieves a list of all recorded errors.
+        /// Gets a list of all recorded errors.
         /// </summary>
         /// <returns>A list of error data.</returns>
         public static List<IErrorData> GetErrors()

@@ -41,7 +41,7 @@ namespace Larry.Source.Utilities
         };
 
         /// <summary>
-        /// Retrieves the AES key corresponding to a specific game version as a byte array.
+        /// Gets the AES key corresponding to a specific game version as a byte array.
         /// </summary>
         /// <param name="version">The game version to lookup.</param>
         /// <returns>A byte array representing the AES key.</returns>
@@ -55,7 +55,7 @@ namespace Larry.Source.Utilities
         }
 
         /// <summary>
-        /// Retrieves the AES key corresponding to a specific game version as a FAesKey object.
+        /// Gets the AES key corresponding to a specific game version as a FAesKey object.
         /// </summary>
         /// <param name="version">The game version to lookup.</param>
         /// <returns>A FAesKey object representing the AES key.</returns>

@@ -328,7 +328,7 @@ namespace Larry.Source.Database
         }
 
         /// <summary>
-        /// Retrieves or creates a new database connection asynchronously.
+        /// Gets or creates a new database connection asynchronously.
         /// </summary>
         /// <returns>A <see cref="NpgsqlConnection"/> object that represents the database connection.</returns>
         public async Task<NpgsqlConnection> GetConnectionAsync()
