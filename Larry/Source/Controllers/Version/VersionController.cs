@@ -4,7 +4,7 @@ namespace Larry.Source.Controllers.Version
 {
     [ApiController]
     [Route("/fortnite/api/v2/")]
-    public class VersionCheck : Controller
+    public class VersionController : Controller
     {
         [HttpGet("versioncheck")]
         public IActionResult check()

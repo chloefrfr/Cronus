@@ -4,7 +4,7 @@
 namespace Larry.Source.Controllers.Waitingroom
 {
     [ApiController]
-    public class Waitingroom : Controller
+    public class WaitingroomController : Controller
     {
         [HttpGet("/waitingroom/api/waitingroom")]
         public IActionResult Get()

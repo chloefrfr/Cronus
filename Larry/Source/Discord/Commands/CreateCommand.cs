@@ -104,9 +104,7 @@ namespace Larry.Source.Discord.Commands
                 return;
             }
 
-            byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
-
-            string hashedPassword = Convert.ToBase64String(KeyDerivation.Pbkdf2(password.ToString(), salt, KeyDerivationPrf.HMACSHA256, 100000, 256 / 8));
+            var (hashedPassword, salt) = PasswordHasher.HashPassword(password.ToString());
             Guid guid = Guid.NewGuid();
             var accountId = guid.ToString().Replace("-", "");
 

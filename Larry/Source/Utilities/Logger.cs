@@ -7,9 +7,9 @@ namespace Larry.Source.Utilities
         static Logger()
         {
             Log.Logger = new LoggerConfiguration()
-                            
-                            .WriteTo.Console()
-                            .CreateLogger();
+                .MinimumLevel.Information()
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
         }
 
         public static void Information(string message)
