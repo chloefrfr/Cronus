@@ -1,6 +1,14 @@
-﻿using Npgsql;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using Dapper;
+using Npgsql;
 using Larry.Source.Database.Entities;
 using Larry.Source.Mappings;
+using Serilog;
+using Larry.Source.Utilities;
 
 namespace Larry.Source.Repositories
 {
@@ -13,6 +21,16 @@ namespace Larry.Source.Repositories
             _connectionString = connectionString;
         }
 
+        private IDbConnection CreateConnection()
+        {
+            return new NpgsqlConnection(_connectionString);
+        }
+
+        private async Task OpenConnectionAsync(IDbConnection connection)
+        {
+            await Task.Run(() => connection.Open());
+        }
+
         /// <summary>
         /// Saves an entity to the database asynchronously.
         /// </summary>
@@ -22,141 +40,117 @@ namespace Larry.Source.Repositories
         /// </remarks>
         public async Task SaveAsync(TEntity entity)
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
+            var stopwatch = Stopwatch.StartNew();
 
-            var query = $"INSERT INTO {EntityMapper.GetTableName(entity)} ({EntityMapper.GetColumnNames(entity)}) " +
-                        $"VALUES ({EntityMapper.GetParameterValues(entity)}) RETURNING id";
+            using var connection = CreateConnection();
+            await OpenConnectionAsync(connection);
 
-            using var command = new NpgsqlCommand(query, connection);
-            EntityMapper.MapParameters(command, entity);
+            var tableName = EntityMapper.GetTableName(entity);
+            var id = entity.Id;
 
-            var id = await command.ExecuteScalarAsync();
-            entity.Id = Convert.ToInt32(id);
+            var updateSetClause = EntityMapper.GetUpdateSetClause(entity);
+            var columnNames = EntityMapper.GetColumnNames(entity);
+            var parameterValues = EntityMapper.GetParameterValues(entity);
+
+            var query = $@"
+INSERT INTO {tableName} ({columnNames})
+VALUES ({parameterValues})
+ON CONFLICT (id) 
+DO UPDATE SET {updateSetClause}
+RETURNING id;";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("Id", id, DbType.Int32); 
+            parameters.AddDynamicParams(entity); 
+
+            entity.Id = await connection.ExecuteScalarAsync<int>(query, parameters);
+
+            stopwatch.Stop();
+            Logger.Information($"SaveAsync took {stopwatch.ElapsedMilliseconds} ms");
         }
 
         /// <summary>
         /// Finds an entity by its unique identifier asynchronously.
         /// </summary>
         /// <param name="id">The unique identifier of the entity.</param>
-        /// <returns>The entity instance if found; otherwise, null.</returns
+        /// <returns>The entity instance if found; otherwise, null.</returns>
         public async Task<TEntity> FindByIdAsync(int id)
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var entity = new TEntity();
-            var tableName = EntityMapper.GetTableName(entity);
-            var query = $"SELECT * FROM {tableName} WHERE id = @id";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@id", id);
-
-
-            using var reader = await command.ExecuteReaderAsync();
-            return await EntityMapper.MapToEntityAsync<TEntity>(reader);
+            var stopwatch = Stopwatch.StartNew();
+            using var connection = CreateConnection();
+            var query = $"SELECT * FROM {EntityMapper.GetTableName(new TEntity())} WHERE id = @Id";
+            var result = await connection.QueryFirstOrDefaultAsync<TEntity>(query, new { Id = id });
+            stopwatch.Stop();
+            Log.Information("FindByIdAsync took {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
+            return result;
         }
 
         /// <summary>
-        /// Finds an entity by its DiscordId asynchronously.
-        /// Available only for User entities.
+        /// Finds an entity by a specified column asynchronously.
+        /// </summary>
+        /// <param name="columnName">The name of the column to search.</param>
+        /// <param name="value">The value to search for.</param>
+        /// <returns>The entity instance if found; otherwise, null.</returns>
+        private async Task<TEntity> FindByColumnAsync(string columnName, string value)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            using var connection = CreateConnection();
+            await OpenConnectionAsync(connection); 
+
+            var query = $"SELECT * FROM {EntityMapper.GetTableName(new TEntity())} WHERE {columnName} = @Value";
+
+            var result = await connection.QueryFirstOrDefaultAsync<TEntity>(query, new { Value = value });
+
+            stopwatch.Stop();
+            Logger.Information($"FindByColumnAsync ({columnName}) took {stopwatch.ElapsedMilliseconds} ms");
+
+            return result;
+        }
+
+        /// <summary>
+        /// Finds a user entity by its Discord ID asynchronously.
         /// </summary>
         /// <param name="discordId">The Discord ID of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public async Task<TEntity> FindByDiscordIdAsync(string discordId)
+        public Task<TEntity> FindByDiscordIdAsync(string discordId)
         {
-            if (typeof(TEntity) != typeof(User))
-                throw new InvalidOperationException("This method is only available for User entities.");
-
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var entity = new TEntity();
-            var tableName = EntityMapper.GetTableName(entity);
-            var query = $"SELECT * FROM {tableName} WHERE discordid = @discordId";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@discordId", discordId);
-
-            using var reader = await command.ExecuteReaderAsync();
-            return await EntityMapper.MapToEntityAsync<TEntity>(reader);
+            EnsureUserEntity();
+            return FindByColumnAsync("discordid", discordId);
         }
 
         /// <summary>
-        /// Finds an entity by its Email asynchronously.
-        /// Available only for User entities.
+        /// Finds a user entity by its email asynchronously.
         /// </summary>
         /// <param name="email">The email of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public async Task<TEntity> FindByEmailAsync(string email)
+        public Task<TEntity> FindByEmailAsync(string email)
         {
-            if (typeof(TEntity) != typeof(User))
-                throw new InvalidOperationException("This method is only available for User entities.");
-
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var entity = new TEntity();
-            var tableName = EntityMapper.GetTableName(entity);
-            var query = $"SELECT * FROM {tableName} WHERE email = @Email";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@Email", email);
-
-            using var reader = await command.ExecuteReaderAsync();
-            return await EntityMapper.MapToEntityAsync<TEntity>(reader);
+            EnsureUserEntity();
+            return FindByColumnAsync("email", email);
         }
 
         /// <summary>
-        /// Finds an entity by its Username asynchronously.
-        /// Available only for User entities.
+        /// Finds a user entity by its username asynchronously.
         /// </summary>
         /// <param name="username">The username of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public async Task<TEntity> FindByUsernameAsync(string username)
+        public Task<TEntity> FindByUsernameAsync(string username)
         {
-            if (typeof(TEntity) != typeof(User))
-                throw new InvalidOperationException("This method is only available for User entities.");
-
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var entity = new TEntity();
-            var tableName = EntityMapper.GetTableName(entity);
-            var query = $"SELECT * FROM {tableName} WHERE username = @Username";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@Username", username);
-
-            using var reader = await command.ExecuteReaderAsync();
-            return await EntityMapper.MapToEntityAsync<TEntity>(reader);
+            EnsureUserEntity();
+            return FindByColumnAsync("username", username);
         }
 
         /// <summary>
-        /// Finds an entity by its AccountiD asynchronously.
-        /// Available only for User entities.
+        /// Finds a user entity by its account ID asynchronously.
         /// </summary>
-        /// <param name="accountId">The accountId of the user.</param>
+        /// <param name="accountId">The account ID of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public async Task<TEntity?> FindByAccountIdAsync(string accountId)
+        public Task<TEntity> FindByAccountIdAsync(string accountId)
         {
-            if (typeof(TEntity) != typeof(User))
-                throw new InvalidOperationException("This method is only available for User entities.");
-
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var entity = new TEntity();
-            var tableName = EntityMapper.GetTableName(entity);
-            var query = $"SELECT * FROM {tableName} WHERE accountid = @AccountId";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@AccountId", accountId);
-
-            using var reader = await command.ExecuteReaderAsync();
-            return await EntityMapper.MapToEntityAsync<TEntity>(reader);
+            EnsureUserEntity();
+            return FindByColumnAsync("accountid", accountId);
         }
-
 
         /// <summary>
         /// Deletes an entity by its unique identifier asynchronously.
@@ -164,15 +158,12 @@ namespace Larry.Source.Repositories
         /// <param name="id">The unique identifier of the entity to delete.</param>
         public async Task DeleteAsync(int id)
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var tableName = EntityMapper.GetTableName(new TEntity());
-            var query = $"DELETE FROM {tableName} WHERE id = @id";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@id", id);
-            await command.ExecuteNonQueryAsync();
+            var stopwatch = Stopwatch.StartNew();
+            using var connection = CreateConnection();
+            var query = $"DELETE FROM {EntityMapper.GetTableName(new TEntity())} WHERE id = @Id";
+            await connection.ExecuteAsync(query, new { Id = id });
+            stopwatch.Stop();
+            Log.Information("DeleteAsync took {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
         }
 
         /// <summary>
@@ -181,23 +172,13 @@ namespace Larry.Source.Repositories
         /// <returns>A list of all entities.</returns>
         public async Task<List<TEntity>> GetAllAsync()
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var tableName = EntityMapper.GetTableName(new TEntity());
-            var query = $"SELECT * FROM {tableName}";
-
-            using var command = new NpgsqlCommand(query, connection);
-            using var reader = await command.ExecuteReaderAsync();
-
-            var entities = new List<TEntity>();
-            while (await reader.ReadAsync())
-            {
-                var entity = await EntityMapper.MapToEntityAsync<TEntity>(reader);
-                entities.Add(entity);
-            }
-
-            return entities;
+            var stopwatch = Stopwatch.StartNew();
+            using var connection = CreateConnection();
+            var query = $"SELECT * FROM {EntityMapper.GetTableName(new TEntity())}";
+            var result = await connection.QueryAsync<TEntity>(query);
+            stopwatch.Stop();
+            Log.Information("GetAllAsync took {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
+            return result.AsList();
         }
 
         /// <summary>
@@ -206,40 +187,49 @@ namespace Larry.Source.Repositories
         /// <param name="entity">The entity instance to update.</param>
         public async Task UpdateAsync(TEntity entity)
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var query = $"UPDATE {EntityMapper.GetTableName(entity)} SET {EntityMapper.GetUpdateSetClause(entity)} WHERE id = @id";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@id", entity.Id);
-            EntityMapper.MapParameters(command, entity);
-
-            await command.ExecuteNonQueryAsync();
+            var stopwatch = Stopwatch.StartNew();
+            using var connection = CreateConnection();
+            var query = $@"
+                UPDATE {EntityMapper.GetTableName(entity)}
+                SET {EntityMapper.GetUpdateSetClause(entity)}
+                WHERE id = @Id";
+            await connection.ExecuteAsync(query, entity);
+            stopwatch.Stop();
+            Log.Information("UpdateAsync took {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
         }
 
         /// <summary>
-        /// Deletes a Tokens entity by accountId and type.
-        /// This method is only available for Tokens entities.
+        /// Deletes a Tokens entity by account ID and type asynchronously.
         /// </summary>
         /// <param name="accountId">The account ID associated with the token.</param>
         /// <param name="type">The type of the token.</param>
         public async Task DeleteByTypeAsync(string accountId, string type)
         {
+            EnsureTokensEntity();
+            var stopwatch = Stopwatch.StartNew();
+            using var connection = CreateConnection();
+            var query = $"DELETE FROM {EntityMapper.GetTableName(new TEntity())} WHERE accountid = @AccountId AND type = @Type";
+            await connection.ExecuteAsync(query, new { AccountId = accountId, Type = type });
+            stopwatch.Stop();
+            Log.Information("DeleteByTypeAsync took {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// Ensures the entity is of type User.
+        /// </summary>
+        private void EnsureUserEntity()
+        {
+            if (typeof(TEntity) != typeof(User))
+                throw new InvalidOperationException("This method is only available for User entities.");
+        }
+
+        /// <summary>
+        /// Ensures the entity is of type Tokens.
+        /// </summary>
+        private void EnsureTokensEntity()
+        {
             if (typeof(TEntity) != typeof(Tokens))
                 throw new InvalidOperationException("This method is only available for Tokens entities.");
-
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var tableName = EntityMapper.GetTableName(new TEntity());
-            var query = $"DELETE FROM {tableName} WHERE accountid = @AccountId AND type = @Type";
-
-            using var command = new NpgsqlCommand(query, connection);
-            command.Parameters.AddWithValue("@AccountId", accountId);
-            command.Parameters.AddWithValue("@Type", type);
-
-            await command.ExecuteNonQueryAsync();
         }
     }
 }
