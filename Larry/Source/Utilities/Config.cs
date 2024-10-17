@@ -9,6 +9,8 @@ namespace Larry.Source.Utilities
         public string GuildId { get; set; }
         public string ClientId { get; set; }
         public string ClientSecret { get; set; }
+        public string GameDirectory { get; set; }
+        public string CurrentVersion { get; set; }
 
         public static Config Load()
         {

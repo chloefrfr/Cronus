@@ -8,6 +8,7 @@ using Larry.Source.Discord;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Net;
 using Newtonsoft.Json;
+using Larry.Source.Utilities.Managers;
 
 namespace Larry
 {
@@ -29,6 +30,8 @@ namespace Larry
 
                 var app = builder.Build();
 
+                var fileProvider = new FileProviderManager(config);
+                await fileProvider.InitializeAsync();
 
                 app.UseHttpsRedirection();
                 app.UseAuthorization();
