@@ -97,8 +97,6 @@ namespace Larry.Source.Controllers.Lightswitch
 
             string json = JsonSerializer.Serialize(response, options);
 
-            Console.WriteLine(json);
-
             return Ok(json);
         }
     }

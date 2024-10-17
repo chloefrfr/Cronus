@@ -28,7 +28,7 @@ namespace Larry.Source.Utilities.Converters
                 }
 
                 string enumValue = reader.GetString();
-                if (Enum.TryParse<ActionsEnum>(enumValue, ignoreCase: true, out var action))
+                if (Enum.TryParse<ActionsEnum>(enumValue.ToUpper(), ignoreCase: true, out var action))
                 {
                     result.Add(action);
                 }
