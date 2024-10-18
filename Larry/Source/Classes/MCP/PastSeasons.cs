@@ -1,45 +1,29 @@
-﻿using System.Text.Json.Serialization;
-using Newtonsoft.Json;
-
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class PastSeasons
     {
-        [JsonProperty("seasonNumber")]
-        public int SeasonNumber { get; set; }
+        public int seasonNumber { get; set; }
 
-        [JsonProperty("numWins")]
-        public int NumWins { get; set; }
+        public int numWins { get; set; }
 
-        [JsonProperty("numHighBracket")]
-        public int NumHighBracket { get; set; }
+        public int numHighBracket { get; set; }
 
-        [JsonProperty("numLowBracket")]
-        public int NumLowBracket { get; set; }
+        public int numLowBracket { get; set; }
 
-        [JsonProperty("seasonXp")]
-        public int SeasonXp { get; set; }
+        public int seasonXp { get; set; }
 
-        [JsonProperty("seasonLevel")]
-        public int SeasonLevel { get; set; }
+        public int seasonLevel { get; set; }
 
-        [JsonProperty("bookXp")]
-        public int BookXp { get; set; }
+        public int bookXp { get; set; }
 
-        [JsonProperty("bookLevel")]
-        public int BookLevel { get; set; }
+        public int bookLevel { get; set; }
 
-        [JsonProperty("purchasedVIP")]
-        public bool PurchasedVIP { get; set; }
+        public bool purchasedVIP { get; set; }
 
-        [JsonProperty("numRoyalRoyales")]
-        public int NumRoyalRoyales { get; set; }
+        public int numRoyalRoyales { get; set; }
 
-        [JsonProperty("survivorTier")]
-        public int SurvivorTier { get; set; }
+        public int survivorTier { get; set; }
 
-        [JsonProperty("survivorPrestige")]
-        public int SurvivorPrestige { get; set; }
+        public int survivorPrestige { get; set; }
     }
 }

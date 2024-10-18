@@ -1,20 +1,11 @@
-﻿using System.Text.Json.Serialization;
-using Newtonsoft.Json;
-
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class PlayerLoadout
     {
-        [JsonProperty("primaryQuickBarRecord")]
-        public QuickBarRecord PrimaryQuickBarRecord { get; set; }
-        [JsonProperty("pinnedSchematicInstances")]
-        public List<object> PinnedSchematicInstances { get; set; }
-        [JsonProperty("secondaryQuickBarRecord")]
-        public QuickBarRecord SecondaryQuickBarRecord { get; set; }
-        [JsonProperty("zonesCompleted")]
-        public int ZonesCompleted { get; set; }
-        [JsonProperty("bPlayerIsNew")]
-        public bool BPlayerIsNew { get; set; }
+        public QuickBarRecord primaryQuickBarRecord { get; set; }
+        public List<object> pinnedSchematicInstances { get; set; }
+        public QuickBarRecord secondaryQuickBarRecord { get; set; }
+        public int zonesCompleted { get; set; }
+        public bool bPlayerIsNew { get; set; }
     }
 }

@@ -2,7 +2,7 @@
 {
     public class BanHistory
     {
-        public Dictionary<string, int> BanCount { get; set; }
-        public object BanTier { get; set; }
+        public Dictionary<string, int> banCount { get; set; }
+        public object banTier { get; set; }
     }
 }

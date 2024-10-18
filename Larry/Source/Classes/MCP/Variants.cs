@@ -1,14 +1,9 @@
-﻿using Newtonsoft.Json;
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class Variants
     {
-        [JsonProperty("channel")]
-        public string Channel { get; set; }
-        [JsonProperty("active")]
-        public string Active { get; set; }
-        [JsonProperty("owned")]
-        public List<string> Owned { get; set; }
+        public string channel { get; set; }
+        public string active { get; set; }
+        public List<string> owned { get; set; }
     }
 }

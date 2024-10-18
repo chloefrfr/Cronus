@@ -15,7 +15,7 @@ namespace Larry.Source.Controllers.ProfileController
             string timestamp = DateTime.UtcNow.ToString("o");
             string profileId = Request.Query["profileId"];    
 
-            var test = ProfileManager.GetProfileAsync(accountId);
+            var test = ProfileManager.GetProfileAsync(accountId, profileId);
 
             if (test == null)
             {

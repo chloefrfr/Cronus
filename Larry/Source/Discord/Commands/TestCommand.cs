@@ -5,6 +5,7 @@ using Larry.Source.Interfaces;
 using Larry.Source.Repositories;
 using Larry.Source.Utilities;
 using Larry.Source.Utilities.Managers;
+using System.Text.Json;
 
 namespace Larry.Source.Discord.Commands
 {
@@ -24,11 +25,9 @@ namespace Larry.Source.Discord.Commands
 
             var user = await userRepository.FindByDiscordIdAsync(discordId.ToString());
 
-            var idk = await ProfileManager.GetProfileAsync(user.AccountId);
-            foreach (var item in idk.Items)
-            {
-                Logger.Information($"Key: {item.Key}, Value: {item.Value}");
-            }
+            var idk = await ProfileManager.GetProfileAsync(user.AccountId, "athena");
+            Console.Write(JsonSerializer.Serialize(idk));
+           // Console.WriteLine(JsonSerializer.Serialize(idk.Stats.Attributes));
         }
 
     }

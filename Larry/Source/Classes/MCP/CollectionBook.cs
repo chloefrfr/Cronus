@@ -1,13 +1,8 @@
-﻿using Newtonsoft.Json;
-using System.Text.Json.Serialization;
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class CollectionBook
     {
-        [JsonProperty("maxBookXpLevelAchieved")]
-        public int MaxBookXpLevelAchieved { get; set; }
-        [JsonProperty("pages")]
-        public List<string> Pages { get; set; }
+        public int maxBookXpLevelAchieved { get; set; }
+        public List<string> pages { get; set; }
     }
 }

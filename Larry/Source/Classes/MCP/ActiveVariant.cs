@@ -2,6 +2,6 @@
 {
     public class ActiveVariant
     {
-        public List<object> Variants { get; set; }
+        public List<Variants> variants { get; set; }
     }
 }

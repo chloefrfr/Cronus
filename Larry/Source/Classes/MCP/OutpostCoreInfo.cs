@@ -1,14 +1,9 @@
-﻿using Newtonsoft.Json;
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class OutpostCoreInfo
     {
-        [JsonProperty("placedBuildings")]
-        public List<PlacedBuildings> PlacedBuildings { get; set; }
-        [JsonProperty("accountsWithEditPermission")]
-        public List<string> AccountsWithEditPermission { get; set; }
-        [JsonProperty("highestEnduranceWaveReached")]
-        public string HighestEnduranceWaveReached { get; set; }
+        public List<PlacedBuildings> placedBuildings { get; set; }
+        public List<string> accountsWithEditPermission { get; set; }
+        public string highestEnduranceWaveReached { get; set; }
     }
 }

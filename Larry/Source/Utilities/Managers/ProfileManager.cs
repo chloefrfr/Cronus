@@ -58,12 +58,17 @@ namespace Larry.Source.Utilities.Managers
                     var athenaProfile = new AthenaProfile(accountId, items, new List<ItemAttributes>());
                     var constructedProfile = athenaProfile.CreateProfile(accountId, items, new List<ItemAttributes>());
 
-                    foreach (var itemData in constructedProfile.Items)
+                    athenaProfile.Profile.version = $"Larry/{accountId}/${type}/{DateTime.UtcNow.ToString("o")}";
+
+                    foreach (var itemData in constructedProfile.items)
                     {
                         await SaveItemAttributesAsync(type, accountId, itemData.Value, itemsRepository);
                     }
 
-                    await SaveProfileAttributesAsync(constructedProfile.Stats.Attributes, type, accountId, itemAttributesRepository);
+                    await SaveProfileAttributesAsync(constructedProfile.stats.attributes, type, accountId, itemAttributesRepository);
+                    break;
+
+                case ProfileIds.CommonCore:
                     break;
 
                 default:
@@ -89,10 +94,10 @@ namespace Larry.Source.Utilities.Managers
                 TemplateId = templateId,
                 Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
                 {
-                    Xp = 0,
-                    Level = 1,
-                    Variants = new List<Variants>(),
-                    ItemSeen = false,
+                    xp = 0,
+                    level = 1,
+                    variants = new List<Variants>(),
+                    item_seen = false,
                 }),
                 Quantity = 1,
                 Favorite = false,
@@ -107,14 +112,14 @@ namespace Larry.Source.Utilities.Managers
         /// <param name="itemsRepository">The repository for items.</param>
         private static async Task SaveItemAttributesAsync(string profileId, string accountId, ItemDefinition item, Repository<Items> itemsRepository)
         {
-            if (item.Attributes == null)
+            if (item.attributes == null)
             {
                 return;
             }
 
             dynamic relevantAttributes = new System.Dynamic.ExpandoObject();
 
-            var attributesType = item.Attributes.GetType();
+            var attributesType = item.attributes.GetType();
             foreach (var property in attributesType.GetProperties())
             {
                 var jsonProperty = property.GetCustomAttribute<JsonPropertyAttribute>();
@@ -123,16 +128,16 @@ namespace Larry.Source.Utilities.Managers
                 switch (jsonPropertyName)
                 {
                     case "favorite":
-                        ((IDictionary<string, object>)relevantAttributes)["favorite"] = (bool)property.GetValue(item.Attributes);
+                        ((IDictionary<string, object>)relevantAttributes)["favorite"] = (bool)property.GetValue(item.attributes);
                         break;
                     case "item_seen":
-                        ((IDictionary<string, object>)relevantAttributes)["item_seen"] = (bool)property.GetValue(item.Attributes);
+                        ((IDictionary<string, object>)relevantAttributes)["item_seen"] = (bool)property.GetValue(item.attributes);
                         break;
                     case "xp":
-                        ((IDictionary<string, object>)relevantAttributes)["xp"] = (int)property.GetValue(item.Attributes);
+                        ((IDictionary<string, object>)relevantAttributes)["xp"] = (int)property.GetValue(item.attributes);
                         break;
                     case "variants":
-                        ((IDictionary<string, object>)relevantAttributes)["variants"] = (List<Variants>)property.GetValue(item.Attributes);
+                        ((IDictionary<string, object>)relevantAttributes)["variants"] = (List<Variants>)property.GetValue(item.attributes);
                         break;
                 }
             }
@@ -141,11 +146,11 @@ namespace Larry.Source.Utilities.Managers
             {
                 ProfileId = profileId,
                 AccountId = accountId,
-                TemplateId = item.TemplateId,
+                TemplateId = item.templateId,
                 Value = System.Text.Json.JsonSerializer.Serialize(relevantAttributes),
-                Quantity = item.Quantity,
-                Favorite = item.Attributes.Favorite,
-                ItemSeen = item.Attributes.ItemSeen,
+                Quantity = item.quantity,
+                Favorite = item.attributes.favorite,
+                ItemSeen = item.attributes.item_seen,
             };
 
             await itemsRepository.SaveAsync(newItem);
@@ -195,7 +200,7 @@ namespace Larry.Source.Utilities.Managers
         /// </summary>
         /// <param name="accountId">The account ID associated with the profile.</param>
         /// <returns>A task that represents the asynchronous operation, containing the <see cref="Profile"/> object if found, or null otherwise.</returns>
-        public static async Task<IProfile?> GetProfileAsync(string accountId)
+        public static async Task<IProfile?> GetProfileAsync(string accountId, string profileId)
         {
             var timer = Stopwatch.StartNew();
 
@@ -208,13 +213,12 @@ namespace Larry.Source.Utilities.Managers
 
                 Profiles primaryProfile = await profilesRepository.FindByAccountIdAsync(accountId);
                 List<ItemAttributes> profileAttributes = new List<ItemAttributes> { await itemAttribuesRepository.FindByAccountIdAsync(accountId) };
-                List<Items> profileItems = new List<Items> { await itemsRepository.FindByAccountIdAsync(accountId) };
-
+                List<Items> profileItems = await itemsRepository.GetAllItemsByAccountIdAsync(accountId);
 
 
                 IProfile constructedItems = null;
 
-                switch (primaryProfile.ProfileId)
+                switch (profileId)
                 {
                     case "athena":
                         var athenaBuilder = new AthenaProfile(accountId, profileItems, profileAttributes);

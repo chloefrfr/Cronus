@@ -1,10 +1,7 @@
-﻿using Newtonsoft.Json;
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class TierProgression
     {
-        [JsonProperty("progressionInfo")]
-        public List<ProgressionInfo> ProgressionInfo { get; set; }
+        public List<ProgressionInfo> progressionInfo { get; set; }
     }
 }

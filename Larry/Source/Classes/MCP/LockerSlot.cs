@@ -2,7 +2,7 @@
 {
     public class LockerSlot
     {
-        public List<string> Items { get; set; }
-        public List<ActiveVariant> ActiveVariants { get; set; }
+        public List<string> items { get; set; }
+        public List<ActiveVariant> activeVariants { get; set; }
     }
 }

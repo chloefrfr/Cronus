@@ -2,8 +2,8 @@
 {
     public class MtxPurchaseHistory
     {
-        public int RefundsUsed { get; set; }
-        public int RefundCredits { get; set; }
-        public List<object> Purchases { get; set; }
+        public int refundsUsed { get; set; }
+        public int refundCredits { get; set; }
+        public List<object> purchases { get; set; }
     }
 }

@@ -2,10 +2,10 @@
 {
     public class InAppPurchases
     {
-        public List<string> Receipts { get; set; }
-        public List<string> IgnoredReceipts { get; set; }
-        public Dictionary<string, int> FulfillmentCounts { get; set; }
-        public Dictionary<string, RefreshTimer> RefreshTimers { get; set; }
-        public int Version { get; set; }
+        public List<string> receipts { get; set; }
+        public List<string> ignoredReceipts { get; set; }
+        public Dictionary<string, int> fulfillmentCounts { get; set; }
+        public Dictionary<string, RefreshTimer> refreshTimers { get; set; }
+        public int version { get; set; }
     }
 }

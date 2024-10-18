@@ -1,15 +1,9 @@
-﻿using Newtonsoft.Json;
-using System.Text.Json.Serialization;
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class MissionAlertRedemptionRecord
     {
-        [JsonProperty("lastClaimTimesMap")]
-        public object LastClaimTimesMap { get; set; }
-        [JsonProperty("lastClaimedGuidPerTheater")]
-        public object LastClaimedGuidPerTheater { get; set; }
-        [JsonProperty("claimData")]
-        public List<MissionAlertClaimData> ClaimData { get; set; }
+        public object lastClaimTimesMap { get; set; }
+        public object lastClaimedGuidPerTheater { get; set; }
+        public List<MissionAlertClaimData> claimData { get; set; }
     }
 }

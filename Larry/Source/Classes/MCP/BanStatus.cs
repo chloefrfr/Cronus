@@ -1,25 +1,16 @@
-﻿using System.Text.Json.Serialization;
-using Newtonsoft.Json;
+﻿using System.Collections.Generic;
 
 namespace Larry.Source.Classes.MCP
 {
     public class BanStatus
     {
-        [JsonProperty("bRequiresUserAck")]
-        public bool BRequiresUserAck { get; set; }
-        [JsonProperty("bBanHasStarted")]
-        public bool BBanHasStarted { get; set; }
-        [JsonProperty("banReasons")]
-        public List<object> BanReasons { get; set; }
-        [JsonProperty("banStartTimeUtc")]
-        public string BanStartTimeUtc { get; set; }
-        [JsonProperty("banDurationDays")]
-        public int? BanDurationDays { get; set; }
-        [JsonProperty("additionalInfo")]
-        public string AdditionalInfo { get; set; }
-        [JsonProperty("exploitProgramName")]
-        public string ExploitProgramName { get; set; }
-        [JsonProperty("competitiveBanReason")]
-        public string CompetitiveBanReason { get; set; }
+        public bool bRequiresUserAck { get; set; }
+        public bool bBanHasStarted { get; set; }
+        public List<string> banReasons { get; set; }
+        public string banStartTimeUtc { get; set; }
+        public int? banDurationDays { get; set; }
+        public string additionalInfo { get; set; }
+        public string exploitProgramName { get; set; }
+        public string competitiveBanReason { get; set; }
     }
 }

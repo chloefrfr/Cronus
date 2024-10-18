@@ -6,7 +6,6 @@ namespace Larry.Source.Classes.MCP
 {
     public class GiftsAttributes
     {
-        [JsonProperty("lootList")]
-        public List<Lootlist> LootList { get; set; }
+        public List<Lootlist> lootList { get; set; }
     }
 }

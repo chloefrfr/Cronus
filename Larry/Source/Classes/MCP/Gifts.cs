@@ -1,16 +1,11 @@
-﻿using System.Text.Json.Serialization;
-using Newtonsoft.Json;
-
+﻿using System.Collections.Generic;
 
 namespace Larry.Source.Classes.MCP
 {
     public class Gifts
     {
-        [JsonProperty("templateId")]
-        public string TemplateId { get; set; }
-        [JsonProperty("attributes")]
-        public GiftsAttributes Attributes { get; set; }
-        [JsonProperty("quantity")]
-        public int Quantity { get; set; }
+        public string templateId { get; set; }
+        public GiftsAttributes attributes { get; set; }
+        public int quantity { get; set; }
     }
 }

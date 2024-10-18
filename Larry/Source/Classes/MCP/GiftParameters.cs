@@ -1,10 +1,7 @@
-﻿using Newtonsoft.Json;
-
-namespace Larry.Source.Classes.MCP
+﻿namespace Larry.Source.Classes.MCP
 {
     public class GiftParameters
     {
-        [JsonProperty("userMessage")]
-        public string UserMessage { get; set; }
+        public string userMessage { get; set; }
     }
 }

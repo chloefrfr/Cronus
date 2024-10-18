@@ -71,6 +71,27 @@ RETURNING id;";
             Logger.Information($"SaveAsync took {stopwatch.ElapsedMilliseconds} ms");
         }
 
+        /// <summary>
+        /// Gets all items associated with a specific account ID asynchronously.
+        /// </summary>
+        /// <param name="accountId">The account ID to filter items.</param>
+        /// <returns>A list of items associated with the given account ID.</returns>
+        public async Task<List<Items>> GetAllItemsByAccountIdAsync(string accountId)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            using var connection = CreateConnection();
+            var query = $"SELECT * FROM {EntityMapper.GetTableName(new Items())} WHERE accountId = @AccountId";
+
+            var result = await connection.QueryAsync<Items>(query, new { AccountId = accountId });
+
+            stopwatch.Stop();
+            Logger.Information($"GetAllItemsByAccountIdAsync took {stopwatch.ElapsedMilliseconds} ms");
+
+            return result.AsList();
+        }
+
+
         public async Task SaveAsync(ItemAttributes itemAttributes, NpgsqlDbType dbType)
         {
             using var connection = new NpgsqlConnection(_connectionString);
