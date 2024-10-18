@@ -5,6 +5,7 @@ using Larry.Source.Database.Entities;
 using Larry.Source.Interfaces;
 using Larry.Source.Repositories;
 using Larry.Source.Utilities;
+using Larry.Source.Utilities.Managers;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.VisualBasic;
 using System.Security.Cryptography;
@@ -134,6 +135,9 @@ namespace Larry.Source.Discord.Commands
                 };
 
                 await userRepository.SaveAsync(newUser);
+
+                await ProfileManager.CreateProfileAsync("athena", newUser.AccountId);
+
                 Logger.Information($"Successfully created user with the username {newUser.Username} and the id {newUser.Id}");
 
                 var embed = new EmbedBuilder()

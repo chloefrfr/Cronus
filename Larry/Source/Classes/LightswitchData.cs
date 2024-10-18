@@ -2,35 +2,37 @@
 using Larry.Source.Interfaces;
 using Larry.Source.Enums;
 using Larry.Source.Utilities.Converters;
+using Newtonsoft.Json;
+
 
 namespace Larry.Source.Classes
 {
     public class LightswitchData : ILightswitchData
     {
-        [JsonPropertyName("serviceInstanceId")]
+        [JsonProperty("serviceInstanceId")]
         public string ServiceInstanceId { get; set; }
         
-        [JsonPropertyName("status")]
-        [JsonConverter(typeof(StatusEnumConverter))]
+        [JsonProperty("status")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(StatusEnumConverter))]
         public StatusEnum Status { get; set; }
         
-        [JsonPropertyName("message")]
+        [JsonProperty("message")]
         public string Message { get; set; }
         
-        [JsonPropertyName("maintenanceUri")]
+        [JsonProperty("maintenanceUri")]
         public string MaintenanceUri { get; set; }
 
-        [JsonPropertyName("overrideCatalogIds")]
+        [JsonProperty("overrideCatalogIds")]
         public List<string> OverrideCatalogIds { get; set; }
         
-        [JsonPropertyName("allowedActions")]
-        [JsonConverter(typeof(ActionsEnumListConverter))]
+        [JsonProperty("allowedActions")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(ActionsEnumListConverter))]
         public List<ActionsEnum> AllowedActions { get; set; }
         
-        [JsonPropertyName("banned")]
+        [JsonProperty("banned")]
         public bool Banned { get; set; }
         
-        [JsonPropertyName("launcherInfoDTO")]
+        [JsonProperty("launcherInfoDTO")]
         public LauncherInfoDTO LauncherInfoDTO { get; set; }
 
         public override string ToString()

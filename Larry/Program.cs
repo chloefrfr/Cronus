@@ -33,6 +33,7 @@ namespace Larry
                 var fileProvider = new FileProviderManager(config);
                 await fileProvider.InitializeAsync();
 
+
                 app.UseHttpsRedirection();
                 app.UseAuthorization();
                 app.MapControllers();

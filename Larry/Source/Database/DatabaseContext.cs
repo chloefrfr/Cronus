@@ -272,6 +272,11 @@ namespace Larry.Source.Database
         /// <returns>The corresponding PostgreSQL type as a string.</returns>
         private string GetPostgresType(Type type)
         {
+            if (type == typeof(System.Dynamic.ExpandoObject) || type == typeof(object))
+            {
+                return "TEXT"; 
+            }
+
             if (type.IsArray)
             {
                 var elementType = type.GetElementType();
@@ -280,7 +285,6 @@ namespace Larry.Source.Database
             }
 
             var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
-
             return underlyingType switch
             {
                 Type t when t == typeof(string) => "VARCHAR",
@@ -290,14 +294,16 @@ namespace Larry.Source.Database
                 Type t when t == typeof(float) => "REAL",
                 Type t when t == typeof(bool) => "BOOLEAN",
                 Type t when t == typeof(DateTime) => "TIMESTAMP",
-                Type t when t == typeof(decimal) => "DECIMAL", 
-                Type t when t == typeof(short) => "SMALLINT", 
-                Type t when t == typeof(byte) => "BYTEA", 
-                Type t when t == typeof(char) => "CHAR", 
+                Type t when t == typeof(decimal) => "DECIMAL",
+                Type t when t == typeof(short) => "SMALLINT",
+                Type t when t == typeof(byte) => "BYTEA",
+                Type t when t == typeof(char) => "CHAR",
                 Type t when t == typeof(Guid) => "UUID",
+                Type t when t == typeof(object) => "JSONB",
                 _ => "TEXT" // Fallback for unsupported types.
             };
         }
+
 
 
         /// <summary>

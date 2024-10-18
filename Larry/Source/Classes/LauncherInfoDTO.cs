@@ -1,14 +1,16 @@
 ﻿using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+
 
 namespace Larry.Source.Classes
 {
     public class LauncherInfoDTO
     {
-        [JsonPropertyName("appName")]
+        [JsonProperty("appName")]
         public string AppName {  get; set; }
-        [JsonPropertyName("catalogItemId")]
+        [JsonProperty("catalogItemId")]
         public string CatalogItemId { get; set; }
-        [JsonPropertyName("namespace")]
+        [JsonProperty("namespace")]
         public string Namespace { get; set; }
 
         public override string ToString()

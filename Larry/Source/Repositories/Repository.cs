@@ -9,6 +9,7 @@ using Larry.Source.Database.Entities;
 using Larry.Source.Mappings;
 using Serilog;
 using Larry.Source.Utilities;
+using NpgsqlTypes;
 
 namespace Larry.Source.Repositories
 {
@@ -21,12 +22,12 @@ namespace Larry.Source.Repositories
             _connectionString = connectionString;
         }
 
-        private IDbConnection CreateConnection()
+        public IDbConnection CreateConnection()
         {
             return new NpgsqlConnection(_connectionString);
         }
 
-        private async Task OpenConnectionAsync(IDbConnection connection)
+        public async Task OpenConnectionAsync(IDbConnection connection)
         {
             await Task.Run(() => connection.Open());
         }
@@ -63,10 +64,26 @@ RETURNING id;";
             parameters.Add("Id", id, DbType.Int32); 
             parameters.AddDynamicParams(entity); 
 
+
             entity.Id = await connection.ExecuteScalarAsync<int>(query, parameters);
 
             stopwatch.Stop();
             Logger.Information($"SaveAsync took {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        public async Task SaveAsync(ItemAttributes itemAttributes, NpgsqlDbType dbType)
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var command = new NpgsqlCommand("INSERT INTO ItemAttributes (ProfileId, Property, Value) VALUES (@ProfileId, @Property, @Value)", connection);
+            command.Parameters.AddWithValue("ProfileId", itemAttributes.ProfileId);
+            command.Parameters.AddWithValue("Property", itemAttributes.Property);
+
+            var valueParameter = command.Parameters.AddWithValue("Value", itemAttributes.Value);
+            valueParameter.NpgsqlDbType = dbType;
+
+            await command.ExecuteNonQueryAsync();
         }
 
         /// <summary>
@@ -113,10 +130,10 @@ RETURNING id;";
         /// </summary>
         /// <param name="discordId">The Discord ID of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public Task<TEntity> FindByDiscordIdAsync(string discordId)
+        public async Task<TEntity> FindByDiscordIdAsync(string discordId)
         {
-            EnsureUserEntity();
-            return FindByColumnAsync("discordid", discordId);
+            EnsureIsCorrectEntity();
+            return await FindByColumnAsync("discordid", discordId);
         }
 
         /// <summary>
@@ -124,10 +141,10 @@ RETURNING id;";
         /// </summary>
         /// <param name="email">The email of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public Task<TEntity> FindByEmailAsync(string email)
+        public async Task<TEntity> FindByEmailAsync(string email)
         {
-            EnsureUserEntity();
-            return FindByColumnAsync("email", email);
+            EnsureIsCorrectEntity();
+            return await FindByColumnAsync("email", email);
         }
 
         /// <summary>
@@ -135,10 +152,10 @@ RETURNING id;";
         /// </summary>
         /// <param name="username">The username of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public Task<TEntity> FindByUsernameAsync(string username)
+        public async Task<TEntity> FindByUsernameAsync(string username)
         {
-            EnsureUserEntity();
-            return FindByColumnAsync("username", username);
+            EnsureIsCorrectEntity();
+            return await FindByColumnAsync("username", username);
         }
 
         /// <summary>
@@ -146,10 +163,11 @@ RETURNING id;";
         /// </summary>
         /// <param name="accountId">The account ID of the user.</param>
         /// <returns>The user instance if found; otherwise, null.</returns>
-        public Task<TEntity> FindByAccountIdAsync(string accountId)
+        public async Task<TEntity> FindByAccountIdAsync(string accountId)
         {
-            EnsureUserEntity();
-            return FindByColumnAsync("accountid", accountId);
+            EnsureIsCorrectEntity();
+
+            return await FindByColumnAsync("accountid", accountId);
         }
 
         /// <summary>
@@ -215,13 +233,50 @@ RETURNING id;";
         }
 
         /// <summary>
-        /// Ensures the entity is of type User.
+        /// Queries the database asynchronously with optimized performance.
         /// </summary>
-        private void EnsureUserEntity()
+        /// <param name="query">The SQL query string.</param>
+        /// <param name="parameters">Query parameters, if any.</param>
+        /// <returns>A list of results mapped to TEntity.</returns>
+        public async Task<IEnumerable<TResult>> QueryAsync<TResult>(string query, object parameters)
         {
-            if (typeof(TEntity) != typeof(User))
-                throw new InvalidOperationException("This method is only available for User entities.");
+            var stopwatch = Stopwatch.StartNew();
+
+            using var connection = CreateConnection();
+            try
+            {
+                Log.Information("Executing SQL Query: {Query}, Parameters: {Parameters}", query, parameters);
+                var result = await connection.QueryAsync<TResult>(query, parameters);
+
+                stopwatch.Stop();
+                Log.Information("QueryAsync executed in {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "QueryAsync encountered an error: {Message}", ex.Message);
+                throw;
+            }
         }
+
+
+
+        /// <summary>
+        /// Ensures the entity is correct.
+        /// </summary>
+        private void EnsureIsCorrectEntity()
+        {
+            Log.Information("Finding entity of type {EntityType}", typeof(TEntity).Name);
+
+            if (typeof(TEntity) != typeof(User) &&
+                typeof(TEntity) != typeof(Profiles) &&
+                typeof(TEntity) != typeof(Items) &&
+                typeof(TEntity) != typeof(ItemAttributes))
+            {
+                throw new InvalidOperationException("This method is only available for User, Profiles, Items and ItemAttributes entities.");
+            }
+        }
+
 
         /// <summary>
         /// Ensures the entity is of type Tokens.

@@ -17,7 +17,7 @@ TBD
 - Ensure transaction consistency and error handling.
 - Implement robust error handling for database operations.
 - Implement mapping between database records and domain entities (e.g., DTOs).
-- Implement a simple query builder for constructing SQL queries dynamically.
+- [x] Implement a simple query builder for constructing SQL queries dynamically.
 - Support for parameterized queries to prevent SQL injection.
 - Implement methods for paginated queries.
 - Add support for filtering results based on various criteria.
