@@ -21,10 +21,7 @@ namespace Larry.Source.Database.Entities
         [Column("quantity")]
         public int Quantity { get; set; }
 
-        [Column("favorite")]
-        public bool Favorite { get; set; }
-
-        [Column("item_seen")]
-        public bool ItemSeen { get; set; }
+        [Column("isStat")]
+        public bool IsStat { get; set; }
     }
 }

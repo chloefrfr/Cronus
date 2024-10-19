@@ -25,8 +25,11 @@ namespace Larry.Source.Discord.Commands
 
             var user = await userRepository.FindByDiscordIdAsync(discordId.ToString());
 
-            var idk = await ProfileManager.GetProfileAsync(user.AccountId, "athena");
-            Console.Write(JsonSerializer.Serialize(idk));
+            var idk = await ProfileManager.GetProfileAsync(user.AccountId, "common_core");
+            Console.Write(JsonSerializer.Serialize(idk, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+            }));
            // Console.WriteLine(JsonSerializer.Serialize(idk.Stats.Attributes));
         }
 

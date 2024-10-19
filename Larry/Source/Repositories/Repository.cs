@@ -68,43 +68,28 @@ RETURNING id;";
             entity.Id = await connection.ExecuteScalarAsync<int>(query, parameters);
 
             stopwatch.Stop();
-            Logger.Information($"SaveAsync took {stopwatch.ElapsedMilliseconds} ms");
+          //  Logger.Information($"SaveAsync took {stopwatch.ElapsedMilliseconds} ms");
         }
 
         /// <summary>
         /// Gets all items associated with a specific account ID asynchronously.
         /// </summary>
-        /// <param name="accountId">The account ID to filter items.</param>
+        /// <param name="accountId">The unique identifier for the account. Used to filter items associated with a specific account.</param>
+        /// <param name="profileId">The unique identifier for the profile. Used to filter items associated with a specific user profile.</param>
         /// <returns>A list of items associated with the given account ID.</returns>
-        public async Task<List<Items>> GetAllItemsByAccountIdAsync(string accountId)
+        public async Task<List<Items>> GetAllItemsByAccountIdAsync(string accountId, string profileId)
         {
             var stopwatch = Stopwatch.StartNew();
 
             using var connection = CreateConnection();
-            var query = $"SELECT * FROM {EntityMapper.GetTableName(new Items())} WHERE accountId = @AccountId";
+            var query = $"SELECT * FROM {EntityMapper.GetTableName(new Items())} WHERE accountId = @AccountId AND profileId = @ProfileId";
 
-            var result = await connection.QueryAsync<Items>(query, new { AccountId = accountId });
+            var result = await connection.QueryAsync<Items>(query, new { AccountId = accountId, ProfileId = profileId });
 
             stopwatch.Stop();
             Logger.Information($"GetAllItemsByAccountIdAsync took {stopwatch.ElapsedMilliseconds} ms");
 
             return result.AsList();
-        }
-
-
-        public async Task SaveAsync(ItemAttributes itemAttributes, NpgsqlDbType dbType)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            using var command = new NpgsqlCommand("INSERT INTO ItemAttributes (ProfileId, Property, Value) VALUES (@ProfileId, @Property, @Value)", connection);
-            command.Parameters.AddWithValue("ProfileId", itemAttributes.ProfileId);
-            command.Parameters.AddWithValue("Property", itemAttributes.Property);
-
-            var valueParameter = command.Parameters.AddWithValue("Value", itemAttributes.Value);
-            valueParameter.NpgsqlDbType = dbType;
-
-            await command.ExecuteNonQueryAsync();
         }
 
         /// <summary>
@@ -291,10 +276,9 @@ RETURNING id;";
 
             if (typeof(TEntity) != typeof(User) &&
                 typeof(TEntity) != typeof(Profiles) &&
-                typeof(TEntity) != typeof(Items) &&
-                typeof(TEntity) != typeof(ItemAttributes))
+                typeof(TEntity) != typeof(Items))
             {
-                throw new InvalidOperationException("This method is only available for User, Profiles, Items and ItemAttributes entities.");
+                throw new InvalidOperationException("This method is only available for User, Profiles, Items entities.");
             }
         }
 

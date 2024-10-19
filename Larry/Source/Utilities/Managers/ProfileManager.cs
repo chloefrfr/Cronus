@@ -14,6 +14,7 @@ using Npgsql;
 using NpgsqlTypes;
 using System.Collections;
 using Serilog;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Larry.Source.Utilities.Managers
 {
@@ -23,18 +24,16 @@ namespace Larry.Source.Utilities.Managers
     public class ProfileManager
     {
         /// <summary>
-        /// Asynchronously creates a new profile based on the specified profile type and account ID.
+        /// Asynchronously creates a profile based on the specified type and account ID.
         /// </summary>
-        /// <param name="type">The type of the profile to create.</param>
+        /// <param name="type">The type of profile to create.</param>
         /// <param name="accountId">The account ID associated with the profile.</param>
-        /// <returns>A new instance of <see cref="Profiles"/>.</returns>
-        /// <exception cref="Exception">Thrown when the profile type is not found.</exception>
+        /// <returns>A task that represents the asynchronous operation, containing the created profile.</returns>
         public static async Task<Profiles> CreateProfileAsync(string type, string accountId)
         {
             var config = Config.GetConfig();
             var profileRepository = new Repository<Profiles>(config.ConnectionUrl);
             var itemsRepository = new Repository<Items>(config.ConnectionUrl);
-            var itemAttributesRepository = new Repository<ItemAttributes>(config.ConnectionUrl);
 
             var newProfile = new Profiles
             {
@@ -42,41 +41,130 @@ namespace Larry.Source.Utilities.Managers
                 ProfileId = type,
                 Revision = 0
             };
-            await profileRepository.SaveAsync(newProfile);
 
-            switch (type)
+            try
             {
-                case ProfileIds.Athena:
-                    var items = new List<Items>
-                    {
-                        CreateItem(type, accountId, "AthenaPickaxe:DefaultPickaxe"),
-                        CreateItem(type, accountId, "AthenaGlider:DefaultGlider"),
-                        CreateItem(type, accountId, "AthenaDance:EID_DanceMove"),
-                        CreateItem(type, accountId, "AthenaCharacter:CID_001_Athena_Commando_F_Default")
-                    };
+                await profileRepository.SaveAsync(newProfile);
+                switch (type)
+                {
+                    case ProfileIds.Athena:
+                        await CreateAthenaProfileAsync(accountId, itemsRepository);
+                        break;
 
-                    var athenaProfile = new AthenaProfile(accountId, items, new List<ItemAttributes>());
-                    var constructedProfile = athenaProfile.CreateProfile(accountId, items, new List<ItemAttributes>());
+                    case ProfileIds.CommonCore:
+                        await CreateCommonCoreProfileAsync(accountId, itemsRepository);
+                        break;
 
-                    athenaProfile.Profile.version = $"Larry/{accountId}/${type}/{DateTime.UtcNow.ToString("o")}";
-
-                    foreach (var itemData in constructedProfile.items)
-                    {
-                        await SaveItemAttributesAsync(type, accountId, itemData.Value, itemsRepository);
-                    }
-
-                    await SaveProfileAttributesAsync(constructedProfile.stats.attributes, type, accountId, itemAttributesRepository);
-                    break;
-
-                case ProfileIds.CommonCore:
-                    break;
-
-                default:
-                    Logger.Error($"Failed to find profileId: {type}");
-                    break;
+                    default:
+                        Logger.Error($"Failed to find profileId: {type}");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to create profile for account {accountId} with type {type}: {ex.Message}");
+                return new Profiles();
             }
 
             return newProfile;
+        }
+
+        /// <summary>
+        /// Asynchronously creates an Athena profile and saves its items and stats.
+        /// </summary>
+        /// <param name="accountId">The account ID associated with the profile.</param>
+        /// <param name="itemsRepository">The repository for managing item data.</param>
+        private static async Task CreateAthenaProfileAsync(string accountId, Repository<Items> itemsRepository)
+        {
+            var athenaItems = CreateAthenaItems(accountId);
+            var athenaProfile = new AthenaProfile(accountId, athenaItems);
+            var constructedAthenaProfile = athenaProfile.CreateProfile(accountId, athenaItems);
+
+            athenaProfile.Profile.version = $"Larry/{accountId}/${ProfileIds.Athena}/{DateTime.UtcNow:O}";
+
+            await SaveProfileAttributesAsync(constructedAthenaProfile, itemsRepository, ProfileIds.Athena, accountId);
+        }
+
+        /// <summary>
+        /// Creates a list of default items for the Athena profile.
+        /// </summary>
+        /// <param name="accountId">The account ID associated with the profile.</param>
+        /// <returns>A list of items for the Athena profile.</returns>
+        private static List<Items> CreateAthenaItems(string accountId)
+        {
+            return new List<Items>
+        {
+            CreateItem(ProfileIds.Athena, accountId, "AthenaPickaxe:DefaultPickaxe"),
+            CreateItem(ProfileIds.Athena, accountId, "AthenaGlider:DefaultGlider"),
+            CreateItem(ProfileIds.Athena, accountId, "AthenaDance:EID_DanceMove"),
+            CreateItem(ProfileIds.Athena, accountId, "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
+            CreateStatItem(ProfileIds.Athena, accountId, "use_random_loadout", false),
+            CreateStatItem(ProfileIds.Athena, accountId, "past_seasons", new List<PastSeasons>()),
+            CreateStatItem(ProfileIds.Athena, accountId, "season_match_boost", 0),
+            CreateStatItem(ProfileIds.Athena, accountId, "loadouts", new List<string>()),
+            CreateStatItem(ProfileIds.Athena, accountId, "mfa_reward_claimed", false),
+            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_overflow", 0),
+            CreateStatItem(ProfileIds.Athena, accountId, "current_mtx_platform", "Epic"),
+            CreateStatItem(ProfileIds.Athena, accountId, "last_xp_interaction", DateTime.UtcNow.ToString("o")),
+            CreateStatItem(ProfileIds.Athena, accountId, "quest_manager", new QuestManager
+            {
+                dailyLoginInterval = DateTime.MinValue.ToString("o"),
+                dailyQuestRerolls = 1,
+                questPoolStats = new QuestPoolStats()
+            }),
+            CreateStatItem(ProfileIds.Athena, accountId, "book_level", 1),
+            CreateStatItem(ProfileIds.Athena, accountId, "season_num", 1),
+            CreateStatItem(ProfileIds.Athena, accountId, "book_xp", 0),
+            CreateStatItem(ProfileIds.Athena, accountId, "creative_dynamic_xp", new Dictionary<string, int>()),
+            CreateStatItem(ProfileIds.Athena, accountId, "season", new Season { numWins = 0, numHighBracket = 0, numLowBracket = 0 }),
+            CreateStatItem(ProfileIds.Athena, accountId, "lifetime_wins", 0),
+            CreateStatItem(ProfileIds.Athena, accountId, "book_purchased", false),
+            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_exchange", 1),
+            CreateStatItem(ProfileIds.Athena, accountId, "level", 1),
+            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp", 2500),
+            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_mult", 4),
+            CreateStatItem(ProfileIds.Athena, accountId, "accountLevel", 1),
+            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_cumulative", 52500),
+            CreateStatItem(ProfileIds.Athena, accountId, "xp", 0),
+            CreateStatItem(ProfileIds.Athena, accountId, "active_loadout_index", 0),
+            CreateStatItem(ProfileIds.Athena, accountId, "favorite_character", ""),
+            CreateStatItem(ProfileIds.Athena, accountId, "favorite_pickaxe", ""),
+            CreateStatItem(ProfileIds.Athena, accountId, "favorite_glider", ""),
+            CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>())
+        };
+        }
+
+        /// <summary>
+        /// Asynchronously creates a Common Core profile and saves its items and stats.
+        /// </summary>
+        /// <param name="accountId">The account ID associated with the profile.</param>
+        /// <param name="itemsRepository">The repository for managing item data.</param>
+        private static async Task CreateCommonCoreProfileAsync(string accountId, Repository<Items> itemsRepository)
+        {
+            var commonCoreItems = new List<Items>(); // Add your Common Core items here
+            var commonCoreProfile = new CommonCoreProfile(accountId, commonCoreItems);
+            var constructedCommonCoreProfile = commonCoreProfile.CreateProfile(accountId, commonCoreItems);
+
+            constructedCommonCoreProfile.version = $"Larry/{accountId}/${ProfileIds.CommonCore}/{DateTime.UtcNow:O}";
+
+            await SaveProfileAttributesAsync(constructedCommonCoreProfile, itemsRepository, ProfileIds.CommonCore, accountId);
+        }
+
+        /// <summary>
+        /// Asynchronously saves the attributes of the given profile and its items.
+        /// </summary>
+        /// <param name="constructedProfile">The profile containing items and stats to save.</param>
+        /// <param name="itemsRepository">The repository for managing item data.</param>
+        /// <param name="profileId">The ID of the profile.</param>
+        /// <param name="accountId">The account ID associated with the profile.</param>
+        private static async Task SaveProfileAttributesAsync(dynamic constructedProfile, Repository<Items> itemsRepository, string profileId, string accountId)
+        {
+            foreach (var itemData in constructedProfile.items)
+            {
+                await SaveItemAttributesAsync(profileId, accountId, itemData.Value, itemsRepository, false);
+            }
+
+            await SaveStatAttributesAsync(profileId, accountId, constructedProfile.stats.attributes, itemsRepository);
         }
 
         /// <summary>
@@ -100,18 +188,32 @@ namespace Larry.Source.Utilities.Managers
                     item_seen = false,
                 }),
                 Quantity = 1,
-                Favorite = false,
-                ItemSeen = false,
+                IsStat = false
             };
         }
+
+        private static Items CreateStatItem(string profileId, string accountId, string templateId, dynamic value)
+        {
+            return new Items
+            {
+                AccountId = accountId,
+                ProfileId = profileId,
+                TemplateId = templateId,
+                Value = System.Text.Json.JsonSerializer.Serialize(value),
+                Quantity = 1,
+                IsStat = true
+            };
+        }
+
 
         /// <summary>
         /// Saves the attributes of an item asynchronously.
         /// </summary>
         /// <param name="item">The item whose attributes are to be saved.</param>
         /// <param name="itemsRepository">The repository for items.</param>
-        private static async Task SaveItemAttributesAsync(string profileId, string accountId, ItemDefinition item, Repository<Items> itemsRepository)
+        private static async Task SaveItemAttributesAsync(string profileId, string accountId, ItemDefinition item, Repository<Items> itemsRepository, bool isStat)
         {
+            //Console.WriteLine(ie)
             if (item.attributes == null)
             {
                 return;
@@ -149,44 +251,44 @@ namespace Larry.Source.Utilities.Managers
                 TemplateId = item.templateId,
                 Value = System.Text.Json.JsonSerializer.Serialize(relevantAttributes),
                 Quantity = item.quantity,
-                Favorite = item.attributes.favorite,
-                ItemSeen = item.attributes.item_seen,
+                IsStat = isStat
             };
 
             await itemsRepository.SaveAsync(newItem);
         }
 
         /// <summary>
-        /// Saves the attributes of the profile asynchronously.
+        /// Asynchronously saves stat attributes for a specified user profile and account.
         /// </summary>
-        /// <param name="itemAttributes">The profile attributes to save.</param>
-        /// <param name="profileId">The profile ID associated with the attributes.</param>
-        /// <param name="itemAttributesRepository">The repository for item attributes.</param>
-        private static async Task SaveProfileAttributesAsync(object itemAttributes, string profileId, string accountId, Repository<ItemAttributes> itemAttributesRepository)
+        /// <param name="profileId">The unique identifier for the user profile.</param>
+        /// <param name="accountId">The unique identifier for the user account.</param>
+        /// <param name="stats">An object containing the stat attributes to be saved.</param>
+        /// <param name="itemsRepository">The repository instance used to save item data.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        /// <exception cref="Exception">Thrown when an error occurs during the saving process.</exception>
+        private static async Task SaveStatAttributesAsync(string profileId, string accountId, dynamic stats, Repository<Items> itemsRepository)
         {
-            foreach (var property in itemAttributes.GetType().GetProperties())
+            try
             {
-                var value = property.GetValue(itemAttributes);
-                if (value == null || (value is string str && string.IsNullOrWhiteSpace(str)))
-                    continue;
+                // Idk what happened but type of stats changed three different times within the span of 4 minutes
+                foreach (var stat in stats)
+                {
+                    var newItem = new Items
+                    {
+                        ProfileId = profileId,
+                        AccountId = accountId,
+                        TemplateId = stat.Key,
+                        Value = System.Text.Json.JsonSerializer.Serialize(stat.Value),
+                        Quantity = 1,
+                        IsStat = true
+                    };
 
-                var jsonValue = JsonConvert.SerializeObject(value);
-                var itemAttribute = new ItemAttributes
-                {
-                    AccountId = accountId,
-                    ProfileId = profileId,
-                    Property = property.Name,
-                    Value = jsonValue
-                };
-
-                if (value is IList)
-                {
-                    await itemAttributesRepository.SaveAsync(itemAttribute, NpgsqlDbType.Jsonb);
+                    await itemsRepository.SaveAsync(newItem);
                 }
-                else
-                {
-                    await itemAttributesRepository.SaveAsync(itemAttribute);
-                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to save attributes: {ex.Message}");
             }
         }
 
@@ -209,11 +311,9 @@ namespace Larry.Source.Utilities.Managers
                 Config config = Config.GetConfig();
                 Repository<Items> itemsRepository = new Repository<Items>(config.ConnectionUrl);
                 Repository<Profiles> profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
-                Repository<ItemAttributes> itemAttribuesRepository = new Repository<ItemAttributes>(config.ConnectionUrl);
 
                 Profiles primaryProfile = await profilesRepository.FindByAccountIdAsync(accountId);
-                List<ItemAttributes> profileAttributes = new List<ItemAttributes> { await itemAttribuesRepository.FindByAccountIdAsync(accountId) };
-                List<Items> profileItems = await itemsRepository.GetAllItemsByAccountIdAsync(accountId);
+                List<Items> profileItems = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
 
 
                 IProfile constructedItems = null;
@@ -221,8 +321,13 @@ namespace Larry.Source.Utilities.Managers
                 switch (profileId)
                 {
                     case "athena":
-                        var athenaBuilder = new AthenaProfile(accountId, profileItems, profileAttributes);
+                        var athenaBuilder = new AthenaProfile(accountId, profileItems);
                         constructedItems = athenaBuilder.GetProfile();
+                        break;
+
+                    case "common_core":
+                        var commonCoreBuilder = new CommonCoreProfile(accountId, profileItems);
+                        constructedItems = commonCoreBuilder.GetProfile();
                         break;
 
                     default:

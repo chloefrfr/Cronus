@@ -134,9 +134,11 @@ namespace Larry.Source.Discord.Commands
                     HasAll = false
                 };
 
-                await userRepository.SaveAsync(newUser);
+                await userRepository.SaveAsync(newUser).ConfigureAwait(true);
 
                 await ProfileManager.CreateProfileAsync("athena", newUser.AccountId);
+                await ProfileManager.CreateProfileAsync("common_core", newUser.AccountId);
+
 
                 Logger.Information($"Successfully created user with the username {newUser.Username} and the id {newUser.Id}");
 
