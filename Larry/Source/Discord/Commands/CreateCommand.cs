@@ -138,7 +138,7 @@ namespace Larry.Source.Discord.Commands
 
                 await ProfileManager.CreateProfileAsync("athena", newUser.AccountId);
                 await ProfileManager.CreateProfileAsync("common_core", newUser.AccountId);
-                await ProfileManager.CreateProfileAsync("common_public", newUser.AccountId);
+                //await ProfileManager.CreateProfileAsync("common_public", newUser.AccountId);
 
 
                 Logger.Information($"Successfully created user with the username {newUser.Username} and the id {newUser.Id}");
