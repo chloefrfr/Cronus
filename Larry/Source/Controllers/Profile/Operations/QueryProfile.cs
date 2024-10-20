@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace Larry.Source.Controllers.ProfileController.Operations
+namespace Larry.Source.Controllers.Profile.Operations
 {
     public class QueryProfile
     {

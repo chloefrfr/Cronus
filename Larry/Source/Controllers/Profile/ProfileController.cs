@@ -1,6 +1,6 @@
 ﻿using Larry.Source.Classes.MCP.Response;
 using Larry.Source.Classes.Profile;
-using Larry.Source.Controllers.ProfileController.Operations;
+using Larry.Source.Controllers.Profile.Operations;
 using Larry.Source.Database.Entities;
 using Larry.Source.Repositories;
 using Larry.Source.Responses;
@@ -9,7 +9,7 @@ using Larry.Source.Utilities.Managers;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
 
-namespace Larry.Source.Controllers.ProfileController
+namespace Larry.Source.Controllers.Profile
 {
     [ApiController]
     [Route("fortnite/api/game/v2/profile")]
