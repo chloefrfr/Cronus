@@ -257,13 +257,16 @@ namespace Larry.Source.Classes.Profiles
                 }
                 else
                 {
-                    var attributesDict = new Dictionary<string, object>
+                    var attributesDict = new Dictionary<string, object>();
+
+                    if (item.TemplateId == "Currency:MtxPurchased")
                     {
-                        { "favorite", deserializedValue.favorite ?? false },
-                        { "item_seen", deserializedValue.item_seen ?? false },
-                        { "xp", deserializedValue.xp ?? 0 },
-                        { "variants", deserializedValue.variants ?? new List<object>() }
-                    };
+                        attributesDict["platform"] = deserializedValue.platform?.ToString() ?? "EpicPC";
+                    }
+                    else
+                    {
+                        attributesDict["level"] = deserializedValue.level ?? 1;
+                    }
 
                     defaultItems[Guid.NewGuid()] = new ItemDefinition
                     {
@@ -313,14 +316,29 @@ namespace Larry.Source.Classes.Profiles
         /// <returns>The mapped <see cref="ItemValue"/>.</returns>
         private ItemValue MapToItemValue(Dictionary<string, object> attributes)
         {
-            return new ItemValue
+            if (attributes.ContainsKey("variants") ||
+                 attributes.ContainsKey("xp") ||
+                 attributes.ContainsKey("favorite"))
             {
-                favorite = GetValue<bool>(attributes, "favorite"),
-                item_seen = GetValue<bool>(attributes, "item_seen"),
-                xp = GetValue<int>(attributes, "xp"),
-                variants = GetVariants(attributes)
-            };
+                return null;
+            }
+
+            var itemValue = new ItemValue();
+
+            if (attributes.TryGetValue("level", out var levelValue))
+            {
+                itemValue.level = Convert.ToInt32(levelValue);
+            }
+
+            if (attributes.TryGetValue("platform", out var platformValue))
+            {
+                Console.WriteLine(platformValue);
+                itemValue.platform = (string)platformValue;
+            }
+
+            return itemValue;
         }
+
 
         /// <summary>
         /// Safely gets a value from the attributes dictionary, providing a default if the key does not exist.
@@ -335,23 +353,6 @@ namespace Larry.Source.Classes.Profiles
         }
 
         /// <summary>
-        /// Gets a list of variants from the attributes dictionary.
-        /// </summary>
-        /// <param name="attributes">The attributes dictionary.</param>
-        /// <returns>A list of <see cref="Variants"/>.</returns>
-        private List<Variants> GetVariants(Dictionary<string, object> attributes)
-        {
-            return attributes.TryGetValue("variants", out var variants) && variants is IEnumerable<object> varList
-                ? varList.Select(v => new Variants
-                {
-                    channel = (v as dynamic)?.channel ?? string.Empty,
-                    owned = (v as dynamic)?.owned ?? new List<string>(),
-                    active = (v as dynamic)?.active ?? string.Empty
-                }).ToList()
-                : new List<Variants>();
-        }
-
-        /// <summary>
         /// Builds a profile skeleton with the given data.
         /// </summary>
         /// <param name="accountId">The account identifier.</param>
@@ -363,11 +364,6 @@ namespace Larry.Source.Classes.Profiles
         {
             // Fixes non-declare attributes from showing
             var cleanedStats = CleanNullAttributes(initialStats);
-
-            if (profile == null)
-            {
-                Logger.Error("what the sigma");
-            }
 
             return new MCPProfile
             {

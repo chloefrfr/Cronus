@@ -15,6 +15,7 @@ using NpgsqlTypes;
 using System.Collections;
 using Serilog;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.ComponentModel;
 
 namespace Larry.Source.Utilities.Managers
 {
@@ -93,45 +94,45 @@ namespace Larry.Source.Utilities.Managers
         private static List<Items> CreateAthenaItems(string accountId)
         {
             return new List<Items>
-        {
-            CreateItem(ProfileIds.Athena, accountId, "AthenaPickaxe:DefaultPickaxe"),
-            CreateItem(ProfileIds.Athena, accountId, "AthenaGlider:DefaultGlider"),
-            CreateItem(ProfileIds.Athena, accountId, "AthenaDance:EID_DanceMove"),
-            CreateItem(ProfileIds.Athena, accountId, "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
-            CreateStatItem(ProfileIds.Athena, accountId, "use_random_loadout", false),
-            CreateStatItem(ProfileIds.Athena, accountId, "past_seasons", new List<PastSeasons>()),
-            CreateStatItem(ProfileIds.Athena, accountId, "season_match_boost", 0),
-            CreateStatItem(ProfileIds.Athena, accountId, "loadouts", new List<string>()),
-            CreateStatItem(ProfileIds.Athena, accountId, "mfa_reward_claimed", false),
-            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_overflow", 0),
-            CreateStatItem(ProfileIds.Athena, accountId, "current_mtx_platform", "Epic"),
-            CreateStatItem(ProfileIds.Athena, accountId, "last_xp_interaction", DateTime.UtcNow.ToString("o")),
-            CreateStatItem(ProfileIds.Athena, accountId, "quest_manager", new QuestManager
             {
-                dailyLoginInterval = DateTime.MinValue.ToString("o"),
-                dailyQuestRerolls = 1,
-                questPoolStats = new QuestPoolStats()
-            }),
-            CreateStatItem(ProfileIds.Athena, accountId, "book_level", 1),
-            CreateStatItem(ProfileIds.Athena, accountId, "season_num", 1),
-            CreateStatItem(ProfileIds.Athena, accountId, "book_xp", 0),
-            CreateStatItem(ProfileIds.Athena, accountId, "creative_dynamic_xp", new Dictionary<string, int>()),
-            CreateStatItem(ProfileIds.Athena, accountId, "season", new Season { numWins = 0, numHighBracket = 0, numLowBracket = 0 }),
-            CreateStatItem(ProfileIds.Athena, accountId, "lifetime_wins", 0),
-            CreateStatItem(ProfileIds.Athena, accountId, "book_purchased", false),
-            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_exchange", 1),
-            CreateStatItem(ProfileIds.Athena, accountId, "level", 1),
-            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp", 2500),
-            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_mult", 4),
-            CreateStatItem(ProfileIds.Athena, accountId, "accountLevel", 1),
-            CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_cumulative", 52500),
-            CreateStatItem(ProfileIds.Athena, accountId, "xp", 0),
-            CreateStatItem(ProfileIds.Athena, accountId, "active_loadout_index", 0),
-            CreateStatItem(ProfileIds.Athena, accountId, "favorite_character", ""),
-            CreateStatItem(ProfileIds.Athena, accountId, "favorite_pickaxe", ""),
-            CreateStatItem(ProfileIds.Athena, accountId, "favorite_glider", ""),
-            CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>())
-        };
+                CreateItem(ProfileIds.Athena, accountId, "AthenaPickaxe:DefaultPickaxe"),
+                CreateItem(ProfileIds.Athena, accountId, "AthenaGlider:DefaultGlider"),
+                CreateItem(ProfileIds.Athena, accountId, "AthenaDance:EID_DanceMove"),
+                CreateItem(ProfileIds.Athena, accountId, "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
+                CreateStatItem(ProfileIds.Athena, accountId, "use_random_loadout", false),
+                CreateStatItem(ProfileIds.Athena, accountId, "past_seasons", new List<PastSeasons>()),
+                CreateStatItem(ProfileIds.Athena, accountId, "season_match_boost", 0),
+                CreateStatItem(ProfileIds.Athena, accountId, "loadouts", new List<string>()),
+                CreateStatItem(ProfileIds.Athena, accountId, "mfa_reward_claimed", false),
+                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_overflow", 0),
+                CreateStatItem(ProfileIds.Athena, accountId, "current_mtx_platform", "Epic"),
+                CreateStatItem(ProfileIds.Athena, accountId, "last_xp_interaction", DateTime.UtcNow.ToString("o")),
+                CreateStatItem(ProfileIds.Athena, accountId, "quest_manager", new QuestManager
+                {
+                    dailyLoginInterval = DateTime.MinValue.ToString("o"),
+                    dailyQuestRerolls = 1,
+                    questPoolStats = new QuestPoolStats()
+                }),
+                CreateStatItem(ProfileIds.Athena, accountId, "book_level", 1),
+                CreateStatItem(ProfileIds.Athena, accountId, "season_num", 1),
+                CreateStatItem(ProfileIds.Athena, accountId, "book_xp", 0),
+                CreateStatItem(ProfileIds.Athena, accountId, "creative_dynamic_xp", new Dictionary<string, int>()),
+                CreateStatItem(ProfileIds.Athena, accountId, "season", new Season { numWins = 0, numHighBracket = 0, numLowBracket = 0 }),
+                CreateStatItem(ProfileIds.Athena, accountId, "lifetime_wins", 0),
+                CreateStatItem(ProfileIds.Athena, accountId, "book_purchased", false),
+                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_exchange", 1),
+                CreateStatItem(ProfileIds.Athena, accountId, "level", 1),
+                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp", 2500),
+                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_mult", 4),
+                CreateStatItem(ProfileIds.Athena, accountId, "accountLevel", 1),
+                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_cumulative", 52500),
+                CreateStatItem(ProfileIds.Athena, accountId, "xp", 0),
+                CreateStatItem(ProfileIds.Athena, accountId, "active_loadout_index", 0),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_character", ""),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_pickaxe", ""),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_glider", ""),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>())
+            };
         }
 
         /// <summary>
@@ -141,13 +142,26 @@ namespace Larry.Source.Utilities.Managers
         /// <param name="itemsRepository">The repository for managing item data.</param>
         private static async Task CreateCommonCoreProfileAsync(string accountId, Repository<Items> itemsRepository, Larry.Source.Database.Entities.Profiles profile)
         {
-            var commonCoreItems = new List<Items>();
+            var commonCoreItems = CreateCommonCoreItems(accountId);
             var commonCoreProfile = new CommonCoreProfile(accountId, commonCoreItems, profile);
             var constructedCommonCoreProfile = commonCoreProfile.CreateProfile(accountId, commonCoreItems, profile);
 
             constructedCommonCoreProfile.version = $"Larry/{accountId}/${ProfileIds.CommonCore}/{DateTime.UtcNow:O}";
 
             await SaveProfileAttributesAsync(constructedCommonCoreProfile, itemsRepository, ProfileIds.CommonCore, accountId);
+        }
+
+        /// <summary>
+        /// Creates a list of default items for the CommonCore profile.
+        /// </summary>
+        /// <param name="accountId">The account ID associated with the profile.</param>
+        /// <returns>A list of items for the CommonCore profile.</returns>
+        private static List<Items> CreateCommonCoreItems(string accountId)
+        {
+            return new List<Items>
+            {
+                CreateCCItem(ProfileIds.CommonCore, accountId, "Currency:MtxPurchased")
+            };
         }
 
         /// <summary>
@@ -188,6 +202,36 @@ namespace Larry.Source.Utilities.Managers
                     item_seen = false,
                 }),
                 Quantity = 1,
+                IsStat = false
+            };
+        }
+
+        /// <summary>
+        /// Creates a new item with the specified profile ID and template ID.
+        /// </summary>
+        /// <param name="profileId">The ID of the profile the item belongs to.</param>
+        /// <param name="templateId">The template ID of the item.</param>
+        /// <returns>A new instance of <see cref="Items"/>.</returns>
+        private static Items CreateCCItem(string profileId, string accountId, string templateId)
+        {
+            var itemValue = new ItemValue();
+
+            if (templateId == "Currency:MtxPurchased")
+            {
+                itemValue.platform = "EpicPC";
+            }
+            else
+            {
+                itemValue.level = 1;
+            }
+
+            return new Items
+            {
+                AccountId = accountId,
+                ProfileId = profileId,
+                TemplateId = templateId,
+                Value = System.Text.Json.JsonSerializer.Serialize(itemValue),
+                Quantity = templateId == "Currency:MtxPurchased" ? 0 : 1,
                 IsStat = false
             };
         }

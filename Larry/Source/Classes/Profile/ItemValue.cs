@@ -11,6 +11,7 @@ namespace Larry.Source.Classes.Profile
         public int use_count { get; set; }
         public int level { get; set; }
         public bool favorite { get; set; }
+        public string? platform { get; set; }
 
         public override string ToString()
         {

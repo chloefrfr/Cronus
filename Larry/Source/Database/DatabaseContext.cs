@@ -138,24 +138,6 @@ namespace Larry.Source.Database
                     }
                 }
             }
-
-            if (isUpdated)
-            {
-                var migrationName = $"{entityType.Name} - {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
-                var migrationSql = $"INSERT INTO migrations (name, created_at) VALUES ('{migrationName}', '{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}');";
-
-                try
-                {
-                    using (var command = new NpgsqlCommand(migrationSql, _connection))
-                    {
-                        command.ExecuteNonQuery();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Error recording migration: {ex.Message}");
-                }
-            }
         }
 
 
