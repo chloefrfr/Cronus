@@ -132,6 +132,33 @@ RETURNING id;";
         }
 
         /// <summary>
+        /// Finds a profile entity by its profile ID and account ID asynchronously.
+        /// </summary>
+        /// <param name="profileId">The profile ID of the profile.</param>
+        /// <param name="accountId">The account ID associated with the profile.</param>
+        /// <returns>The profile instance if found; otherwise, null.</returns>
+        public async Task<TEntity?> FindByProfileIdAndAccountIdAsync(string profileId, string accountId)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            EnsureIsCorrectEntity();
+
+            using var connection = CreateConnection();
+            await OpenConnectionAsync(connection);
+
+            var query = $"SELECT * FROM {EntityMapper.GetTableName(new TEntity())} WHERE profileid = @ProfileId AND accountid = @AccountId";
+
+
+            var result = await connection.QuerySingleOrDefaultAsync<TEntity>(query, new { ProfileId = profileId, AccountId = accountId });
+
+
+            stopwatch.Stop();
+            Logger.Information($"FindByProfileIdAndAccountIdAsync ({EntityMapper.GetTableName(new TEntity())}) took {stopwatch.ElapsedMilliseconds} ms");
+
+            return result;
+        }
+
+
+        /// <summary>
         /// Finds a user entity by its Discord ID asynchronously.
         /// </summary>
         /// <param name="discordId">The Discord ID of the user.</param>

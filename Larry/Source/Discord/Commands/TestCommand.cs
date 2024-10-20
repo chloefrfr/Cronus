@@ -25,11 +25,9 @@ namespace Larry.Source.Discord.Commands
 
             var user = await userRepository.FindByDiscordIdAsync(discordId.ToString());
 
-            var idk = await ProfileManager.GetProfileAsync(user.AccountId, "common_core");
-            Console.Write(JsonSerializer.Serialize(idk, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-            }));
+            Repository<Profiles> repository = new Repository<Profiles>(config.ConnectionUrl);
+            var imgonnaputmydickintiva = await repository.GetAllItemsByAccountIdAsync("athena", user.AccountId);
+
            // Console.WriteLine(JsonSerializer.Serialize(idk.Stats.Attributes));
         }
 

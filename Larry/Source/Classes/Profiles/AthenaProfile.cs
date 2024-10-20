@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Larry.Source.Utilities;
 using System.Reflection;
+using Larry.Source.Database.Entities;
 
 namespace Larry.Source.Classes.Profiles
 {
@@ -25,11 +26,12 @@ namespace Larry.Source.Classes.Profiles
         /// </summary>
         /// <param name="accountId">The account identifier.</param>
         /// <param name="items">The list of items.</param>
-        public AthenaProfile(string accountId, List<Items> items) : base(null)
+        /// <param name="profile">The profile</param>
+        public AthenaProfile(string accountId, List<Items> items, Larry.Source.Database.Entities.Profiles profile) : base(null)
         {
             try
             {
-                Profile = CreateProfile(accountId, items);
+                Profile = CreateProfile(accountId, items, profile);
             }
             catch (Exception ex)
             {
@@ -42,8 +44,9 @@ namespace Larry.Source.Classes.Profiles
         /// </summary>
         /// <param name="accountId">The account identifier.</param>
         /// <param name="items">The list of items.</param>
+        /// <param name="profile">The profile</param>
         /// <returns>The created profile.</returns>
-        public IProfile CreateProfile(string accountId, List<Items> items)
+        public IProfile CreateProfile(string accountId, List<Items> items, Larry.Source.Database.Entities.Profiles profile)
         {
             var defaultItems = new Dictionary<Guid, ItemDefinition>();
             var initialStats = new StatsAttributes
@@ -91,7 +94,7 @@ namespace Larry.Source.Classes.Profiles
                 GenerateItem(item, defaultItems, initialStats);
             }
 
-            return BuildProfileSkeleton(accountId, defaultItems, initialStats);
+            return BuildProfileSkeleton(accountId, defaultItems, initialStats, profile);
         }
 
         /// <summary>
@@ -301,8 +304,9 @@ namespace Larry.Source.Classes.Profiles
         /// <param name="accountId">The account identifier.</param>
         /// <param name="defaultItems">The dictionary of default items.</param>
         /// <param name="initialStats">The initial stats for the profile.</param>
+        /// <param name="profile">The profile</param>
         /// <returns>The built profile.</returns>
-        private IProfile BuildProfileSkeleton(string accountId, Dictionary<Guid, ItemDefinition> defaultItems, StatsAttributes initialStats)
+        private IProfile BuildProfileSkeleton(string accountId, Dictionary<Guid, ItemDefinition> defaultItems, StatsAttributes initialStats, Larry.Source.Database.Entities.Profiles profile)
         {
             // Fixes non-declare attributes from showing
             var cleanedStats = CleanNullAttributes(initialStats);
@@ -310,14 +314,14 @@ namespace Larry.Source.Classes.Profiles
             {
                 created = DateTime.UtcNow.ToString("o"),
                 updated = DateTime.UtcNow.ToString("o"),
-                rvn = 0,
+                rvn = profile.Revision,
                 wipeNumber = 1,
                 accountId = accountId,
                 profileId = "athena",
                 version = "no_version",
                 stats = cleanedStats,
                 items = defaultItems,
-                commandRevision = 0,
+                commandRevision = profile.Revision,
             };
         }
 

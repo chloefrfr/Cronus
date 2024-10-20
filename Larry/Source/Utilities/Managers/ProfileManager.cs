@@ -48,11 +48,11 @@ namespace Larry.Source.Utilities.Managers
                 switch (type)
                 {
                     case ProfileIds.Athena:
-                        await CreateAthenaProfileAsync(accountId, itemsRepository);
+                        await CreateAthenaProfileAsync(accountId, itemsRepository, newProfile);
                         break;
 
                     case ProfileIds.CommonCore:
-                        await CreateCommonCoreProfileAsync(accountId, itemsRepository);
+                        await CreateCommonCoreProfileAsync(accountId, itemsRepository, newProfile);
                         break;
 
                     default:
@@ -74,11 +74,11 @@ namespace Larry.Source.Utilities.Managers
         /// </summary>
         /// <param name="accountId">The account ID associated with the profile.</param>
         /// <param name="itemsRepository">The repository for managing item data.</param>
-        private static async Task CreateAthenaProfileAsync(string accountId, Repository<Items> itemsRepository)
+        private static async Task CreateAthenaProfileAsync(string accountId, Repository<Items> itemsRepository, Larry.Source.Database.Entities.Profiles profile)
         {
             var athenaItems = CreateAthenaItems(accountId);
-            var athenaProfile = new AthenaProfile(accountId, athenaItems);
-            var constructedAthenaProfile = athenaProfile.CreateProfile(accountId, athenaItems);
+            var athenaProfile = new AthenaProfile(accountId, athenaItems, profile);
+            var constructedAthenaProfile = athenaProfile.CreateProfile(accountId, athenaItems, profile);
 
             athenaProfile.Profile.version = $"Larry/{accountId}/${ProfileIds.Athena}/{DateTime.UtcNow:O}";
 
@@ -139,11 +139,11 @@ namespace Larry.Source.Utilities.Managers
         /// </summary>
         /// <param name="accountId">The account ID associated with the profile.</param>
         /// <param name="itemsRepository">The repository for managing item data.</param>
-        private static async Task CreateCommonCoreProfileAsync(string accountId, Repository<Items> itemsRepository)
+        private static async Task CreateCommonCoreProfileAsync(string accountId, Repository<Items> itemsRepository, Larry.Source.Database.Entities.Profiles profile)
         {
-            var commonCoreItems = new List<Items>(); // Add your Common Core items here
-            var commonCoreProfile = new CommonCoreProfile(accountId, commonCoreItems);
-            var constructedCommonCoreProfile = commonCoreProfile.CreateProfile(accountId, commonCoreItems);
+            var commonCoreItems = new List<Items>();
+            var commonCoreProfile = new CommonCoreProfile(accountId, commonCoreItems, profile);
+            var constructedCommonCoreProfile = commonCoreProfile.CreateProfile(accountId, commonCoreItems, profile);
 
             constructedCommonCoreProfile.version = $"Larry/{accountId}/${ProfileIds.CommonCore}/{DateTime.UtcNow:O}";
 
@@ -312,7 +312,7 @@ namespace Larry.Source.Utilities.Managers
                 Repository<Items> itemsRepository = new Repository<Items>(config.ConnectionUrl);
                 Repository<Profiles> profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
 
-                Profiles primaryProfile = await profilesRepository.FindByAccountIdAsync(accountId);
+                Profiles primaryProfile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
                 List<Items> profileItems = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
 
 
@@ -321,12 +321,12 @@ namespace Larry.Source.Utilities.Managers
                 switch (profileId)
                 {
                     case "athena":
-                        var athenaBuilder = new AthenaProfile(accountId, profileItems);
+                        var athenaBuilder = new AthenaProfile(accountId, profileItems, primaryProfile);
                         constructedItems = athenaBuilder.GetProfile();
                         break;
 
                     case "common_core":
-                        var commonCoreBuilder = new CommonCoreProfile(accountId, profileItems);
+                        var commonCoreBuilder = new CommonCoreProfile(accountId, profileItems, primaryProfile);
                         constructedItems = commonCoreBuilder.GetProfile();
                         break;
 

@@ -74,6 +74,25 @@ namespace Larry
                         await context.HttpContext.Response.WriteAsync(JsonConvert.SerializeObject(error));
                     }
                 });
+/*
+                app.Use(async (ctx, next) =>
+                {
+                    var operationManager = new MCPOperationManager();
+                    var handlers = await operationManager.LoadOperationAsync();
+
+                    var path = ctx.Request.Path.Value?.Trim('/');
+
+                    Logger.Information($"Path: {path}");
+
+                    if (path != null && handlers.TryGetValue(path, out var handler))
+                    {
+                        await handler(ctx);
+                    }
+                    else
+                    {
+                        await next();
+                    }
+                });*/
 
                 var bot = new Bot();
 

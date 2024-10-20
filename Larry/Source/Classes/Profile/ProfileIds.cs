@@ -4,6 +4,7 @@
     {
         public const string Athena = "athena";
         public const string CommonCore = "common_core";
+        public const string CommonPublic = "common_public";
         public const string Campaign = "campaign";
         public const string Metadata = "metadata";
         public const string Theater0 = "theater0";
