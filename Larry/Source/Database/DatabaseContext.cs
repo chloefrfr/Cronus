@@ -30,12 +30,18 @@ namespace Larry.Source.Database
         {
             _connectionString = connectionString;
 
-            _connection = new NpgsqlConnection(connectionString);
-            _connection.Open();
-
-            Logger.Information("Database connection opened.");
-
-            CreateTables();
+            try
+            {
+                _connection = new NpgsqlConnection(connectionString);
+                _connection.Open();
+                Logger.Information("Database connection opened.");
+                CreateTables();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to open database connection: {ex.Message}");
+                throw;
+            }
         }
 
         /// <summary>
@@ -75,72 +81,27 @@ namespace Larry.Source.Database
             {
                 CreateTable(entityType);
             }
-            else
-            {
-                UpdateTable(entityType, tableName);
-            }
         }
+
 
         /// <summary>
-        /// Updates the specified table by adding any new columns based on the entity properties.
+        /// Gets the data type of a specified column in a given table.
         /// </summary>
-        /// <param name="entityType">The type of the entity whose properties to check.</param>
-        /// <param name="tableName">The name of the table to update.</param>
-        private void UpdateTable(Type entityType, string tableName)
-        {
-            var existingColumns = GetExistingColumns(tableName).Select(c => c.ToLower()).ToList();
-            var newColumns = entityType.GetProperties()
-                .Where(p => p.Name != "Id")
-                .Select(p => new
-                {
-                    Name = p.GetCustomAttribute<ColumnAttribute>()?.ColumnName?.ToLower() ?? p.Name.ToLower(),
-                    Type = GetPostgresType(p.PropertyType)
-                }).ToList();
+        /// <param name="tableName">The name of the table.</param>
+        /// <param name="columnName">The name of the column to retrieve the type for.</param>
+        /// <returns>The data type of the specified column as a string.</returns>
+        private string GetColumnType(string tableName, string columnName)
+        {            
+            var sql = $"SELECT data_type FROM information_schema.columns WHERE table_name = @tableName AND column_name = @columnName;";
 
-            bool isUpdated = false;
-
-            foreach (var column in newColumns)
+            using (var command = new NpgsqlCommand(sql, _connection))
             {
-                if (!existingColumns.Contains(column.Name))
-                {
-                    var sql = $"ALTER TABLE {tableName} ADD COLUMN \"{column.Name}\" {column.Type};"; 
-                    try
-                    {
-                        using (var command = new NpgsqlCommand(sql, _connection))
-                        {
-                            command.ExecuteNonQuery();
-                            Logger.Information($"Column {column.Name} added to table {tableName}.");
-                            isUpdated = true;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error($"Error adding column {column.Name} to table {tableName}: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    if (!IsColumnTypeMatching(tableName, column.Name, column.Type))
-                    {
-                        var alterSql = $"ALTER TABLE {tableName} ALTER COLUMN \"{column.Name}\" TYPE {column.Type};";
-                        try
-                        {
-                            using (var command = new NpgsqlCommand(alterSql, _connection))
-                            {
-                                command.ExecuteNonQuery();
-                                isUpdated = true;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Error($"Error altering column {column.Name} in table {tableName}: {ex.Message}");
-                        }
-                    }
-                }
+                command.Parameters.AddWithValue("@tableName", tableName);
+                command.Parameters.AddWithValue("@columnName", columnName);
+
+                return command.ExecuteScalar()?.ToString() ?? string.Empty;
             }
         }
-
-
 
         /// <summary>
         /// Checks if the column type matches the specified type in the database.

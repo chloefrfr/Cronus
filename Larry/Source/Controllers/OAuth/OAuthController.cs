@@ -3,6 +3,7 @@ using Larry.Source.Repositories;
 using Larry.Source.Utilities;
 using Larry.Source.Utilities.Parsers;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -139,6 +140,75 @@ namespace Larry.Source.Controllers.OAuth
                 app = "fortnite",
                 in_app_id = user.AccountId,
                 device_id = Request.Headers["X-Epic-Device-Id"],
+            });
+        }
+
+        [HttpGet("verify")]
+        public async Task<IActionResult> VerifyToken()
+        {
+            string authorizationHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            string timestamp = DateTime.UtcNow.ToString("o");
+
+            if (string.IsNullOrEmpty(authorizationHeader))
+            {
+                return BadRequest(Errors.CreateError(400, Request.Path, "Authorization header missing.", timestamp));
+            }
+
+            const string bearerPrefix = "Bearer ";
+            if (!authorizationHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(Errors.CreateError(400, Request.Path, "Invalid token format.", timestamp));
+            }
+
+            string token = authorizationHeader.Substring(bearerPrefix.Length).Trim();
+            string accessToken = token.Replace("eg1~", string.Empty);
+
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                return BadRequest(Errors.CreateError(400, Request.Path, "Invalid token.", timestamp));
+            }
+
+            Config config = Config.GetConfig();
+
+            var decodedToken = TokenGenerator.DecodeToken(accessToken, config.ClientSecret);
+            if (decodedToken == null)
+            {
+                return BadRequest(Errors.CreateError(400, Request.Path, "Invalid token.", timestamp));
+            }
+
+            var accountId = decodedToken.TryGetValue("sub", out var sub) ? sub.ToString() : null;
+            if (string.IsNullOrEmpty(accountId))
+            {
+                return NotFound(Errors.CreateError(404, Request.Path, "Failed to find user.", timestamp));
+            }
+
+            Repository<User> userRepository = new Repository<User>(config.ConnectionUrl);
+            var user = await userRepository.FindByAccountIdAsync(accountId);
+            if (user == null)
+            {
+                return NotFound(Errors.CreateError(404, Request.Path, "Failed to find user.", timestamp));
+            }
+
+            var creationDate = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(decodedToken["creation_date"])).UtcDateTime;
+            var expiresIn = Convert.ToInt32(decodedToken["expires_in"]);
+            var expiry = creationDate.AddHours(expiresIn);
+
+            return Ok(new
+            {
+                token,
+                session_id = decodedToken["jti"].ToString(),
+                token_type = "bearer",
+                client_id = decodedToken["clid"].ToString(),
+                internal_client = true,
+                client_service = "fortnite",
+                account_id = user.AccountId,
+                expires_in = (int)(expiry - DateTime.UtcNow).TotalSeconds,
+                expires_at = expiry.AddHours(8),
+                auth_method = decodedToken["am"].ToString(),
+                display_name = user.Username,
+                app = "fortnite",
+                in_app_id = user.AccountId,
+                device_id = decodedToken["dvid"].ToString(),
             });
         }
     }

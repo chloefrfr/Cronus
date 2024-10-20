@@ -332,7 +332,6 @@ namespace Larry.Source.Classes.Profiles
 
             if (attributes.TryGetValue("platform", out var platformValue))
             {
-                Console.WriteLine(platformValue);
                 itemValue.platform = (string)platformValue;
             }
 

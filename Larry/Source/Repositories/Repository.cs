@@ -10,6 +10,7 @@ using Larry.Source.Mappings;
 using Serilog;
 using Larry.Source.Utilities;
 using NpgsqlTypes;
+using System.Data.Common;
 
 namespace Larry.Source.Repositories
 {
@@ -77,20 +78,55 @@ RETURNING id;";
         /// <param name="accountId">The unique identifier for the account. Used to filter items associated with a specific account.</param>
         /// <param name="profileId">The unique identifier for the profile. Used to filter items associated with a specific user profile.</param>
         /// <returns>A list of items associated with the given account ID.</returns>
-        public async Task<List<Items>> GetAllItemsByAccountIdAsync(string accountId, string profileId)
+        public async Task<List<TEntity>> GetAllItemsByAccountIdAsync(string accountId, string profileId)
         {
-            var stopwatch = Stopwatch.StartNew();
+            const int maxRetries = 3;
+            const int commandTimeout = 5;
+
+            var query = $@"
+        SELECT * 
+        FROM {EntityMapper.GetTableName(new TEntity())} 
+        WHERE accountid = @AccountId AND profileid = @ProfileId;";
+
+            var parameters = new { AccountId = accountId, ProfileId = profileId };
 
             using var connection = CreateConnection();
-            var query = $"SELECT * FROM {EntityMapper.GetTableName(new Items())} WHERE accountId = @AccountId AND profileId = @ProfileId";
+            await OpenConnectionAsync(connection);
 
-            var result = await connection.QueryAsync<Items>(query, new { AccountId = accountId, ProfileId = profileId });
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            for (int attempt = 0; attempt < maxRetries; attempt++)
+            {
+                using var transaction = connection.BeginTransaction();
+                try
+                {
+                    var commandDefinition = new CommandDefinition(
+                        query,
+                        parameters,
+                        transaction: transaction,
+                        commandTimeout: commandTimeout
+                    );
 
-            stopwatch.Stop();
-            Logger.Information($"GetAllItemsByAccountIdAsync took {stopwatch.ElapsedMilliseconds} ms");
+                    var result = await connection.QueryAsync<TEntity>(commandDefinition).ConfigureAwait(false);
+                    transaction.Commit();
+                    stopwatch.Stop();
+                    Logger.Information($"GetAllItemsByAccountIdAsync took {stopwatch.ElapsedMilliseconds} ms");
+                    return result.AsList();
+                }
+                catch (TimeoutException ex)
+                {
+                    transaction.Rollback();
+                    Logger.Error($"Timeout error on attempt {attempt + 1}: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    Logger.Error($"An error occurred on attempt {attempt + 1}: {ex.Message}");
+                }
+            }
 
-            return result.AsList();
+            throw new Exception("Max retries reached.");
         }
+
 
         /// <summary>
         /// Finds an entity by its unique identifier asynchronously.
@@ -147,14 +183,28 @@ RETURNING id;";
 
             var query = $"SELECT * FROM {EntityMapper.GetTableName(new TEntity())} WHERE profileid = @ProfileId AND accountid = @AccountId";
 
+            Logger.Information($"Executing Query: {query}, ProfileId: {profileId}, AccountId: {accountId}");
 
-            var result = await connection.QuerySingleOrDefaultAsync<TEntity>(query, new { ProfileId = profileId, AccountId = accountId });
-
-
-            stopwatch.Stop();
-            Logger.Information($"FindByProfileIdAndAccountIdAsync ({EntityMapper.GetTableName(new TEntity())}) took {stopwatch.ElapsedMilliseconds} ms");
-
-            return result;
+            try
+            {
+                var result = await connection.QuerySingleOrDefaultAsync<TEntity>(query, new { ProfileId = profileId, AccountId = accountId });
+                return result;
+            }
+            catch (NpgsqlException npgsqlEx)
+            {
+                Logger.Error($"PostgreSQL error: {npgsqlEx.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occured: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                stopwatch.Stop();
+                Logger.Information($"FindByProfileIdAndAccountIdAsync took {stopwatch.ElapsedMilliseconds} ms");
+            }
         }
 
 
