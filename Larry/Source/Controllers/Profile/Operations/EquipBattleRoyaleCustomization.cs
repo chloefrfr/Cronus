@@ -20,94 +20,36 @@ namespace Larry.Source.Controllers.Profile.Operations
             var profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
             var itemsRepository = new Repository<Items>(config.ConnectionUrl);
 
-            var user = await userRepository.FindByAccountIdAsync(accountId);
-            if (user == null)
-            {
-                Logger.Information($"Execution time {stopwatch.ElapsedMilliseconds} ms");
-                return new BaseResponse();
-            }
+            var userTask = userRepository.FindByAccountIdAsync(accountId);
+            var profileTask = profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
+            var itemsTask = itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
 
-            var profile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, user.AccountId);
-            if (profile == null)
+            await Task.WhenAll(userTask, profileTask, itemsTask);
+
+            var user = userTask.Result;
+            var profile = profileTask.Result;
+            var items = itemsTask.Result;
+
+            if (user == null || profile == null)
             {
                 Logger.Information($"Execution time {stopwatch.ElapsedMilliseconds} ms");
                 return new BaseResponse();
             }
 
             var profileChanges = new List<object>();
-            var items = await itemsRepository.GetAllItemsByAccountIdAsync(user.AccountId, profileId);
-
-            string itemSlotFixed = body.ItemToSlot.Replace("item:", "");
-            var item = await itemsRepository.FindByTemplateIdAsync(body.ItemToSlot)
-                         ?? await itemsRepository.FindByTemplateIdAsync(body.ItemToSlot);
+            var itemSlotFixed = body.ItemToSlot.Replace("item:", "");
+            var item = await itemsRepository.FindByTemplateIdAsync(body.ItemToSlot);
 
             if (item != null)
             {
-                string statKey = body.SlotName switch
-                {
-                    "Dance" when body.IndexWithinSlot is >= 0 and <= 6 => "favorite_dance",
-                    "ItemWrap" => "favorite_itemwraps",
-                    _ when new[] { "Character", "Backpack", "Pickaxe", "Glider", "SkyDiveContrail", "MusicPack", "LoadingScreen" }
-                        .Contains(body.SlotName) => $"favorite_{body.SlotName.ToLower()}",
-                    _ => null
-                };
+                var statKey = GetStatKey(body.SlotName, body.IndexWithinSlot);
 
                 if (statKey != null)
                 {
                     var statItem = await itemsRepository.FindByTemplateIdAsync(statKey);
                     if (statItem?.IsStat == true)
                     {
-                        string[] valueArray;
-
-                        switch (body.SlotName)
-                        {
-                            case "Dance":
-                                valueArray = (statItem.Value as string)?.Split(',') ?? new string[6];
-                                if (body.IndexWithinSlot >= 0 && body.IndexWithinSlot < valueArray.Length)
-                                {
-                                    valueArray[body.IndexWithinSlot] = item.TemplateId ?? "";
-                                }
-                                else
-                                {
-                                    Array.Resize(ref valueArray, body.IndexWithinSlot + 1);
-                                    valueArray[body.IndexWithinSlot] = item.TemplateId ?? "";
-                                }
-
-                                statItem.Value = string.Join(",", valueArray);
-                                profileChanges.Add(new
-                                {
-                                    changeType = "statModified",
-                                    name = "favorite_dance",
-                                    value = valueArray
-                                });
-                                break;
-
-                            case "ItemWrap":
-                                valueArray = new string[7];
-                                for (int i = 0; i < 7; i++)
-                                {
-                                    valueArray[i] = item.TemplateId ?? "";
-                                }
-                                statItem.Value = string.Join(",", valueArray);
-                                profileChanges.Add(new
-                                {
-                                    changeType = "statModified",
-                                    name = "favorite_itemwraps",
-                                    value = valueArray
-                                });
-                                break;
-
-                            default:
-                                statItem.Value = item.TemplateId;
-                                profileChanges.Add(new
-                                {
-                                    changeType = "statModified",
-                                    name = $"favorite_{body.SlotName.ToLower()}",
-                                    value= item.TemplateId
-                                });
-                                break;
-                        }
-
+                        UpdateStatItem(body, item, statItem, profileChanges);
                         await itemsRepository.UpdateAsync(statItem);
                     }
                 }
@@ -126,6 +68,72 @@ namespace Larry.Source.Controllers.Profile.Operations
 
             Logger.Information($"Execution time {stopwatch.ElapsedMilliseconds} ms");
             return MCPResponses.Generate(profile, changes, profileId);
+        }
+
+        private static string GetStatKey(string slotName, int? indexWithinSlot)
+        {
+            return slotName switch
+            {
+                "Dance" when indexWithinSlot is >= 0 and <= 6 => "favorite_dance",
+                "ItemWrap" => "favorite_itemwraps",
+                _ when new[] { "Character", "Backpack", "Pickaxe", "Glider", "SkyDiveContrail", "MusicPack", "LoadingScreen" }
+                    .Contains(slotName) => $"favorite_{slotName.ToLower()}",
+                _ => null
+            };
+        }
+
+        private static void UpdateStatItem(EquipRequestBody body, Items item, Items statItem, List<object> profileChanges)
+        {
+            string[] valueArray;
+
+            switch (body.SlotName)
+            {
+                case "Dance":
+                    valueArray = (statItem.Value as string)?.Split(',') ?? new string[6];
+                    if (body.IndexWithinSlot >= 0 && body.IndexWithinSlot < valueArray.Length)
+                    {
+                        valueArray[body.IndexWithinSlot] = item.TemplateId ?? "";
+                    }
+                    else
+                    {
+                        Array.Resize(ref valueArray, body.IndexWithinSlot + 1);
+                        valueArray[body.IndexWithinSlot] = item.TemplateId ?? "";
+                    }
+
+                    statItem.Value = string.Join(",", valueArray);
+                    profileChanges.Add(new
+                    {
+                        changeType = "statModified",
+                        name = "favorite_dance",
+                        value = valueArray
+                    });
+                    break;
+
+                case "ItemWrap":
+                    valueArray = new string[7];
+                    for (int i = 0; i < 7; i++)
+                    {
+                        valueArray[i] = item.TemplateId ?? "";
+                    }
+                    statItem.Value = string.Join(",", valueArray);
+                    profileChanges.Add(new
+                    {
+                        changeType = "statModified",
+                        name = "favorite_itemwraps",
+                        value = valueArray
+                    });
+                    break;
+
+                default:
+                    statItem.Value = item.TemplateId;
+                    profileChanges.Add(new
+                    {
+                        changeType = "statModified",
+                        name = $"favorite_{body.SlotName.ToLower()}",
+                        value = item.TemplateId
+                    });
+                    break;
+            }
         }
     }
 }
