@@ -219,17 +219,13 @@ namespace Larry.Source.Classes.Profiles
                             favoriteDances = new List<string>();
                         }
 
+                        favoriteDances.Clear();
+
                         var dances = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
                         foreach (var danceMove in dances)
                         {
-                            if (favoriteDances.Count < 6)
-                            {
-                                favoriteDances.Add(danceMove);
-                            }
-                            else
-                            {
-                                break;
-                            }
+                            favoriteDances.Add(danceMove);
                         }
                     }
                 },

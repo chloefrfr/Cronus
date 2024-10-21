@@ -45,7 +45,7 @@ namespace Larry.Source.Controllers.Profile.Operations
             {
                 string statKey = body.SlotName switch
                 {
-                    "Dance" when body.IndexWithinSlot is >= 0 and <= 5 => "favorite_dance",
+                    "Dance" when body.IndexWithinSlot is >= 0 and <= 6 => "favorite_dance",
                     "ItemWrap" => "favorite_itemwraps",
                     _ when new[] { "Character", "Backpack", "Pickaxe", "Glider", "SkyDiveContrail", "MusicPack", "LoadingScreen" }
                         .Contains(body.SlotName) => $"favorite_{body.SlotName.ToLower()}",
@@ -57,27 +57,58 @@ namespace Larry.Source.Controllers.Profile.Operations
                     var statItem = await itemsRepository.FindByTemplateIdAsync(statKey);
                     if (statItem?.IsStat == true)
                     {
-                        string value = body.SlotName switch
+                        string[] valueArray;
+
+                        switch (body.SlotName)
                         {
-                            "ItemWrap" when body.IndexWithinSlot == -1 || body.IndexWithinSlot <= 7
-                                => string.Join(",", new string[7].Select(_ => item.TemplateId ?? "")),
+                            case "Dance":
+                                valueArray = (statItem.Value as string)?.Split(',') ?? new string[6];
+                                if (body.IndexWithinSlot >= 0 && body.IndexWithinSlot < valueArray.Length)
+                                {
+                                    valueArray[body.IndexWithinSlot] = item.TemplateId ?? "";
+                                }
+                                else
+                                {
+                                    Array.Resize(ref valueArray, body.IndexWithinSlot + 1);
+                                    valueArray[body.IndexWithinSlot] = item.TemplateId ?? "";
+                                }
 
-                            "Dance" when body.IndexWithinSlot is int index =>
-                                string.Join(",", ((statItem.Value as string)?.Split(',') ?? new string[6])
-                                    .Select((v, i) => i == index ? item.TemplateId ?? "" : v)),
+                                statItem.Value = string.Join(",", valueArray);
+                                profileChanges.Add(new
+                                {
+                                    changeType = "statModified",
+                                    name = "favorite_dance",
+                                    value = valueArray
+                                });
+                                break;
 
-                            _ => item.TemplateId
-                        };
+                            case "ItemWrap":
+                                valueArray = new string[7];
+                                for (int i = 0; i < 7; i++)
+                                {
+                                    valueArray[i] = item.TemplateId ?? "";
+                                }
+                                statItem.Value = string.Join(",", valueArray);
+                                profileChanges.Add(new
+                                {
+                                    changeType = "statModified",
+                                    name = "favorite_itemwraps",
+                                    value = valueArray
+                                });
+                                break;
 
-                        statItem.Value = value;
+                            default:
+                                statItem.Value = item.TemplateId;
+                                profileChanges.Add(new
+                                {
+                                    changeType = "statModified",
+                                    name = $"favorite_{body.SlotName.ToLower()}",
+                                    value= item.TemplateId
+                                });
+                                break;
+                        }
+
                         await itemsRepository.UpdateAsync(statItem);
-
-                        profileChanges.Add(new
-                        {
-                            changeType = "statModified",
-                            name = statKey,
-                            value = value
-                        });
                     }
                 }
             }
