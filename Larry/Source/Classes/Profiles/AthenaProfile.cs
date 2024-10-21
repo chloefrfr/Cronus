@@ -228,11 +228,11 @@ namespace Larry.Source.Classes.Profiles
                             }
                             else
                             {
-                                break; 
+                                break;
                             }
                         }
                     }
-                }
+                },
             };
 
             foreach (var stat in allStats)

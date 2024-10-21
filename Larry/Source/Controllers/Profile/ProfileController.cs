@@ -97,6 +97,7 @@ namespace Larry.Source.Controllers.Profile
             List<object> applyProfileChanges = new List<object>();
 
             BaseResponse response = null;
+            dynamic body = null;
 
             switch (operation)
             {
@@ -104,13 +105,21 @@ namespace Larry.Source.Controllers.Profile
                     response = await QueryProfile.Init(user.AccountId, profileId);
                     break;
                 case "EquipBattleRoyaleCustomization":
-                    var body = await Request.ReadFromJsonAsync<EquipRequestBody>();
+                    body = await Request.ReadFromJsonAsync<EquipRequestBody>();
                     if (body == null)
                     {
                         return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));
                     }
 
                     response = await EquipBattleRoyaleCustomization.Init(user.AccountId, profileId, body);
+                    break;
+                case "MarkItemSeen":
+                    body = await Request.ReadFromJsonAsync<MITSRequestBody>();
+                    if (body == null)
+                    {
+                        return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));
+                    }
+                    response = await MarkItemSeen.Init(user.AccountId, profileId, body);
                     break;
                 default:
                     Logger.Warning($"Missing operation: {operation}");
