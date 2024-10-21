@@ -96,7 +96,10 @@ RETURNING id;";
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                using var transaction = connection.BeginTransaction();
+                Config config = Config.GetConfig();
+                var asyncRepository = new AsyncRepositoryBase(config.ConnectionUrl);
+
+                using var transaction = await asyncRepository.BeginTransactionAsync(connection);
                 try
                 {
                     var commandDefinition = new CommandDefinition(
@@ -181,13 +184,13 @@ RETURNING id;";
             using var connection = CreateConnection();
             await OpenConnectionAsync(connection);
 
-            var query = $"SELECT * FROM {EntityMapper.GetTableName(new TEntity())} WHERE profileid = @ProfileId AND accountid = @AccountId";
+            var query = $"SELECT DISTINCT * FROM {EntityMapper.GetTableName(new TEntity())} WHERE profileid = @ProfileId AND accountid = @AccountId";
 
             Logger.Information($"Executing Query: {query}, ProfileId: {profileId}, AccountId: {accountId}");
 
             try
             {
-                var result = await connection.QuerySingleOrDefaultAsync<TEntity>(query, new { ProfileId = profileId, AccountId = accountId });
+                var result = await connection.QueryFirstOrDefaultAsync<TEntity>(query, new { ProfileId = profileId, AccountId = accountId });
                 return result;
             }
             catch (NpgsqlException npgsqlEx)
@@ -298,6 +301,18 @@ RETURNING id;";
             stopwatch.Stop();
             Log.Information("UpdateAsync took {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
         }
+
+        /// <summary>
+        /// Finds an item entity by its template ID asynchronously.
+        /// </summary>
+        /// <param name="templateId">The template ID of the item.</param>
+        /// <returns>The item instance if found; otherwise, null.</returns>
+        public async Task<TEntity> FindByTemplateIdAsync(string templateId)
+        {
+            EnsureIsCorrectEntity();
+            return await FindByColumnAsync("templateid", templateId);
+        }
+
 
         /// <summary>
         /// Deletes a Tokens entity by account ID and type asynchronously.

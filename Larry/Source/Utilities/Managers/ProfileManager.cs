@@ -97,7 +97,7 @@ namespace Larry.Source.Utilities.Managers
             {
                 CreateItem(ProfileIds.Athena, accountId, "AthenaPickaxe:DefaultPickaxe"),
                 CreateItem(ProfileIds.Athena, accountId, "AthenaGlider:DefaultGlider"),
-                CreateItem(ProfileIds.Athena, accountId, "AthenaDance:EID_DanceMove"),
+                CreateItem(ProfileIds.Athena, accountId, "AthenaDance:EID_DanceMoves"),
                 CreateItem(ProfileIds.Athena, accountId, "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
                 CreateStatItem(ProfileIds.Athena, accountId, "use_random_loadout", false),
                 CreateStatItem(ProfileIds.Athena, accountId, "past_seasons", new List<PastSeasons>()),
@@ -249,6 +249,28 @@ namespace Larry.Source.Utilities.Managers
             };
         }
 
+        public static async Task<ItemDefinition> GetItemById(string accountId, string profileId, string templateId)
+        {
+            Config config = Config.GetConfig();
+            Repository<Items> itemsRepository = new Repository<Items>(config.ConnectionUrl);
+            Repository<Profiles> profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
+
+            Profiles primaryProfile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
+            List<Items> profileItems = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
+
+
+            ItemDefinition item = null;
+
+            switch (profileId)
+            {
+                case "athena":
+                    var athenaProfile = new AthenaProfile(accountId, profileItems, primaryProfile);
+                    item = athenaProfile.GetItemById(templateId);
+                    break;
+            }
+
+            return item;
+        }
 
         /// <summary>
         /// Saves the attributes of an item asynchronously.

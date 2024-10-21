@@ -15,7 +15,7 @@ namespace Larry.Source.Interfaces
         string profileId { get; set; }
         string version { get; set; }
         StatsAttributes stats { get; set; }
-        Dictionary<Guid, ItemDefinition> items { get; set; }
+        Dictionary<string, ItemDefinition> items { get; set; }
         int commandRevision { get; set; }
     }
 }

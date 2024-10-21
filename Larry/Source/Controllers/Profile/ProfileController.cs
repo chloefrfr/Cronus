@@ -1,4 +1,5 @@
-﻿using Larry.Source.Classes.MCP.Response;
+﻿using Larry.Source.Classes.MCP.RequestBody;
+using Larry.Source.Classes.MCP.Response;
 using Larry.Source.Classes.Profile;
 using Larry.Source.Controllers.Profile.Operations;
 using Larry.Source.Database.Entities;
@@ -73,7 +74,7 @@ namespace Larry.Source.Controllers.Profile
                             profileId = "common_public",
                             version = "no_version",
                             stats = new StatsAttributes(),
-                            items = new Dictionary<Guid, Classes.MCP.ItemDefinition>(),
+                            items = new Dictionary<string, Classes.MCP.ItemDefinition>(),
                             commandRevision = 0
                         }
                     }
@@ -101,6 +102,15 @@ namespace Larry.Source.Controllers.Profile
             {
                 case "QueryProfile":
                     response = await QueryProfile.Init(user.AccountId, profileId);
+                    break;
+                case "EquipBattleRoyaleCustomization":
+                    var body = await Request.ReadFromJsonAsync<EquipRequestBody>();
+                    if (body == null)
+                    {
+                        return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));
+                    }
+
+                    response = await EquipBattleRoyaleCustomization.Init(user.AccountId, profileId, body);
                     break;
                 default:
                     Logger.Warning($"Missing operation: {operation}");

@@ -14,7 +14,7 @@ namespace Larry.Source.Classes.Profile
         public string profileId { get; set; }
         public string version { get; set; }
         public StatsAttributes stats { get; set; }
-        public Dictionary<Guid, ItemDefinition> items { get; set; }
+        public Dictionary<string, ItemDefinition> items { get; set; }
         public int commandRevision { get; set; }
     }
 }

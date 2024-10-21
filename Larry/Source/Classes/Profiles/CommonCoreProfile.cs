@@ -47,7 +47,7 @@ namespace Larry.Source.Classes.Profiles
         /// <returns>The created profile.</returns>
         public IProfile CreateProfile(string accountId, List<Items> items, Larry.Source.Database.Entities.Profiles profile)
         {
-            var defaultItems = new Dictionary<Guid, ItemDefinition>();
+            var defaultItems = new Dictionary<string, ItemDefinition>();
             var initialStats = new StatsAttributes
             {
                 attributes = new StatsData
@@ -128,7 +128,7 @@ namespace Larry.Source.Classes.Profiles
         /// <param name="item">The item to process.</param>
         /// <param name="defaultItems">The dictionary of default items.</param>
         /// <param name="initialStats">The initial stats for the profile.</param>
-        private void GenerateItem(Items item, Dictionary<Guid, ItemDefinition> defaultItems, StatsAttributes initialStats)
+        private void GenerateItem(Items item, Dictionary<string, ItemDefinition> defaultItems, StatsAttributes initialStats)
         {
             if (item == null || item.Value == null)
                 return;
@@ -268,7 +268,7 @@ namespace Larry.Source.Classes.Profiles
                         attributesDict["level"] = deserializedValue.level ?? 1;
                     }
 
-                    defaultItems[Guid.NewGuid()] = new ItemDefinition
+                    defaultItems[item.TemplateId] = new ItemDefinition
                     {
                         templateId = item.TemplateId,
                         quantity = item.Quantity,
@@ -359,7 +359,7 @@ namespace Larry.Source.Classes.Profiles
         /// <param name="initialStats">The initial stats for the profile.</param>
         /// <param name="profile">The profile</param>
         /// <returns>The built profile.</returns>
-        private IProfile BuildProfileSkeleton(string accountId, Dictionary<Guid, ItemDefinition> defaultItems, StatsAttributes initialStats, Larry.Source.Database.Entities.Profiles profile)
+        private IProfile BuildProfileSkeleton(string accountId, Dictionary<string, ItemDefinition> defaultItems, StatsAttributes initialStats, Larry.Source.Database.Entities.Profiles profile)
         {
             // Fixes non-declare attributes from showing
             var cleanedStats = CleanNullAttributes(initialStats);

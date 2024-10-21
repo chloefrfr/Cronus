@@ -3,11 +3,11 @@ using System.Data;
 
 namespace Larry.Source.Repositories
 {
-    public abstract class AsyncRepositoryBase
+    public class AsyncRepositoryBase
     {
         private readonly string _connectionString;
 
-        protected AsyncRepositoryBase(string connectionString)
+        public AsyncRepositoryBase(string connectionString)
         {
             _connectionString = connectionString;
         }
@@ -20,7 +20,7 @@ namespace Larry.Source.Repositories
         /// <summary>
         /// Opens a database connection asynchronously.
         /// </summary>
-        protected async Task<IDbConnection> OpenConnectionAsync()
+        public async Task<IDbConnection> OpenConnectionAsync()
         {
             var connection = CreateConnection();
             await Task.Run(() => connection.Open());
@@ -30,7 +30,7 @@ namespace Larry.Source.Repositories
         /// <summary>
         /// Begins a database transaction asynchronously.
         /// </summary>
-        protected async Task<IDbTransaction> BeginTransactionAsync(IDbConnection connection)
+        public async Task<IDbTransaction> BeginTransactionAsync(IDbConnection connection)
         {
             return await Task.Run(() => connection.BeginTransaction());
         }

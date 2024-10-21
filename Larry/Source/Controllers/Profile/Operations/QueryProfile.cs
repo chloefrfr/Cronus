@@ -34,7 +34,6 @@ namespace Larry.Source.Controllers.Profile.Operations
             List<object> applyProfileChanges = new List<object>();
 
 
-            Console.WriteLine(profileId);
             var profile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, user.AccountId);
             if (profile == null && profileId == "common_public") {
                 var profileChanges = new List<object>
@@ -52,7 +51,7 @@ namespace Larry.Source.Controllers.Profile.Operations
                             profileId = "common_public",
                             version = "no_version",
                             stats = new StatsAttributes(),
-                            items = new Dictionary<Guid, Classes.MCP.ItemDefinition>(),
+                            items = new Dictionary<string, Classes.MCP.ItemDefinition>(),
                             commandRevision = 0
                         }
                     }
@@ -91,7 +90,7 @@ namespace Larry.Source.Controllers.Profile.Operations
                             profileId = "common_public",
                             version = "no_version",
                             stats = new StatsAttributes(),
-                            items = new Dictionary<Guid, Classes.MCP.ItemDefinition>(),
+                            items = new Dictionary<string, Classes.MCP.ItemDefinition>(),
                             commandRevision = 0
                         }
                     }
