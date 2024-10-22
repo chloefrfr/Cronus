@@ -5,13 +5,15 @@ using Larry.Source.Database.Entities;
 using Larry.Source.Repositories;
 using Larry.Source.Responses;
 using Larry.Source.Utilities;
+using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Larry.Source.Controllers.Profile.Operations
 {
     public class EquipBattleRoyaleCustomization
     {
-        public static async Task<BaseResponse> Init(string accountId, string profileId, EquipRequestBody body)
+        public static async ValueTask<BaseResponse> Init(string accountId, string profileId, EquipRequestBody body)
         {
             var stopwatch = Stopwatch.StartNew();
             var config = Config.GetConfig();
@@ -22,13 +24,11 @@ namespace Larry.Source.Controllers.Profile.Operations
 
             var userTask = userRepository.FindByAccountIdAsync(accountId);
             var profileTask = profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
-            var itemsTask = itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
 
-            await Task.WhenAll(userTask, profileTask, itemsTask);
+            await Task.WhenAll(userTask, profileTask);
 
-            var user = userTask.Result;
-            var profile = profileTask.Result;
-            var items = itemsTask.Result;
+            var user = await userTask; 
+            var profile = await profileTask;
 
             if (user == null || profile == null)
             {
@@ -36,7 +36,7 @@ namespace Larry.Source.Controllers.Profile.Operations
                 return new BaseResponse();
             }
 
-            var profileChanges = new List<object>();
+            var profileChanges = new ConcurrentBag<object>();
             var itemSlotFixed = body.ItemToSlot.Replace("item:", "");
             var item = await itemsRepository.FindByTemplateIdAsync(body.ItemToSlot);
 
@@ -47,6 +47,7 @@ namespace Larry.Source.Controllers.Profile.Operations
                 if (statKey != null)
                 {
                     var statItem = await itemsRepository.FindByTemplateIdAsync(statKey);
+
                     if (statItem?.IsStat == true)
                     {
                         UpdateStatItem(body, item, statItem, profileChanges);
@@ -61,13 +62,10 @@ namespace Larry.Source.Controllers.Profile.Operations
                 await profilesRepository.SaveAsync(profile);
             }
 
-            var athenaProfile = new AthenaProfile(user.AccountId, items, profile).GetProfile();
-            var changes = profileChanges.Count > 0
-                ? profileChanges
-                : new List<object> { new { changeType = "fullProfileUpdate", profile = athenaProfile } };
+       
 
             Logger.Information($"Execution time {stopwatch.ElapsedMilliseconds} ms");
-            return MCPResponses.Generate(profile, changes, profileId);
+            return MCPResponses.Generate(profile, profileChanges, profileId);
         }
 
         private static string GetStatKey(string slotName, int? indexWithinSlot)
@@ -82,7 +80,7 @@ namespace Larry.Source.Controllers.Profile.Operations
             };
         }
 
-        private static void UpdateStatItem(EquipRequestBody body, Items item, Items statItem, List<object> profileChanges)
+        private static void UpdateStatItem(EquipRequestBody body, Items item, Items statItem, ConcurrentBag<object> profileChanges)
         {
             string[] valueArray;
 
@@ -110,11 +108,7 @@ namespace Larry.Source.Controllers.Profile.Operations
                     break;
 
                 case "ItemWrap":
-                    valueArray = new string[7];
-                    for (int i = 0; i < 7; i++)
-                    {
-                        valueArray[i] = item.TemplateId ?? "";
-                    }
+                    valueArray = Enumerable.Repeat(item.TemplateId ?? "", 7).ToArray();
                     statItem.Value = string.Join(",", valueArray);
                     profileChanges.Add(new
                     {
@@ -125,6 +119,7 @@ namespace Larry.Source.Controllers.Profile.Operations
                     break;
 
                 default:
+                   Console.WriteLine($"test test -> {body.SlotName.ToLower()}");
                     statItem.Value = item.TemplateId;
                     profileChanges.Add(new
                     {

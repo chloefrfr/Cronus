@@ -141,7 +141,13 @@ namespace Larry.Source.Utilities.Managers
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_character", ""),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_pickaxe", ""),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_glider", ""),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>())
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_backpack", ""),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_skydivecontrail", ""),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_loadingscreen", ""),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_musicpack", ""),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>()),
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_itemwraps", new List<string>())
+
             };
         }
 
@@ -409,9 +415,13 @@ namespace Larry.Source.Utilities.Managers
                 if (cosmeticTypeMapping.TryGetValue(cosmeticTypeKey, out var cosmeticType))
                 {
                     var templateId = $"{cosmeticType}:{cosmeticName}";
-                    var isAlreadyInDB = itemRepository.FindByTemplateIdAsync(templateId);
+                    var isAlreadyInDB = await itemRepository.FindByTemplateIdAsync(templateId);
 
-                    if (isAlreadyInDB != null) return;
+                    if (isAlreadyInDB != null)
+                    {
+                        Logger.Warning("???");
+                        return;
+                    }
 
                     var newItem = new Items
                     {

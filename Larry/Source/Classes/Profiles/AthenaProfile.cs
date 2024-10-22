@@ -87,6 +87,11 @@ namespace Larry.Source.Classes.Profiles
                     favorite_pickaxe = string.Empty,
                     favorite_glider = string.Empty,
                     favorite_dance = new List<string>(),
+                    favorite_itemwraps = new List<string>(),
+                    favorite_loadingscreen = string.Empty,
+                    favorite_backpack = string.Empty,
+                    favorite_skydivecontrail = string.Empty,
+                    favorite_musicpack = string.Empty
                 }
             };
 
@@ -182,7 +187,14 @@ namespace Larry.Source.Classes.Profiles
                 { "favorite_character", (value, attr) => attr.attributes.favorite_character = value?.ToString() },
                 { "favorite_pickaxe", (value, attr) => attr.attributes.favorite_pickaxe = value?.ToString() },
                 { "favorite_glider", (value, attr) => attr.attributes.favorite_glider = value?.ToString() },
-                { "favorite_dance", (value, attr) =>
+                { "favorite_backpack", (value, attr) => attr.attributes.favorite_backpack = value?.ToString()  },
+                { "favorite_loadingscreen", (value, attr) => attr.attributes.favorite_loadingscreen = value?.ToString()  },
+                { "favorite_skydivecontrail", (value, attr) => attr.attributes.favorite_skydivecontrail = value?.ToString()  },
+                { "favorite_musicpack", (value, attr) => attr.attributes.favorite_musicpack = value?.ToString()  },
+                { "favorite_itemwraps", (value, attr) =>
+                    attr.attributes.favorite_itemwraps = value is JToken favoriteDanceToken ? favoriteDanceToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
+                },
+                 { "favorite_dance", (value, attr) =>
                     attr.attributes.favorite_dance = value is JToken favoriteDanceToken ? favoriteDanceToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
                 },
                 { "allowed_to_receive_gifts", (value, attr) => attr.attributes.allowed_to_receive_gifts = (bool)value },
@@ -205,13 +217,18 @@ namespace Larry.Source.Classes.Profiles
 
             var allStats = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, "athena");
             var attributes = initialStats.attributes;
-            var favoriteDances = attributes.favorite_dance; 
+            var favoriteDances = attributes.favorite_dance;
+            var favoriteWraps = attributes.favorite_itemwraps;
 
             var attributeMapping = new Dictionary<string, Action<string>>
             {
                 { "favorite_character", value => attributes.favorite_character = value },
                 { "favorite_pickaxe", value => attributes.favorite_pickaxe = value },
                 { "favorite_glider", value => attributes.favorite_glider = value },
+                { "favorite_skydivecontrail", value => attributes.favorite_skydivecontrail = value },
+                { "favorite_backpack", value => attributes.favorite_backpack = value },
+                { "favorite_loadingscreen", value => attributes.favorite_loadingscreen = value },
+                { "favorite_musicpack", value => attributes.favorite_musicpack = value },
                 { "favorite_dance", value =>
                     {
                         if (favoriteDances == null)
@@ -226,6 +243,23 @@ namespace Larry.Source.Classes.Profiles
                         foreach (var danceMove in dances)
                         {
                             favoriteDances.Add(danceMove);
+                        }
+                    }
+                },
+                { "favorite_itemwraps", value =>
+                    {
+                        if (favoriteWraps == null)
+                        {
+                            favoriteWraps = new List<string>();
+                        }
+
+                        favoriteWraps.Clear();
+
+                        var wraps = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (var itemWrap in wraps)
+                        {
+                            favoriteWraps.Add(itemWrap);
                         }
                     }
                 },
