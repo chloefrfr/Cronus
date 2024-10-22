@@ -16,6 +16,10 @@ using System.Collections;
 using Serilog;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.ComponentModel;
+using CUE4Parse.Utils;
+using CUE4Parse.FileProvider;
+using K4os.Compression.LZ4.Internal;
+using System.Collections.Concurrent;
 
 namespace Larry.Source.Utilities.Managers
 {
@@ -24,6 +28,12 @@ namespace Larry.Source.Utilities.Managers
     /// </summary>
     public class ProfileManager
     {
+/*        private DefaultFileProvider _fileProvider { get; set; }
+        public ProfileManager(DefaultFileProvider fileProvider)
+        {
+            _fileProvider = fileProvider;
+        }*/
+
         /// <summary>
         /// Asynchronously creates a profile based on the specified type and account ID.
         /// </summary>
@@ -336,7 +346,7 @@ namespace Larry.Source.Utilities.Managers
         {
             try
             {
-                // Idk what happened but type of stats changed three different times within the span of 4 minutes
+                // Idk what happened but the type of the stats changed three different times within the span of 4 minutes
                 foreach (var stat in stats)
                 {
                     var newItem = new Items
@@ -356,6 +366,77 @@ namespace Larry.Source.Utilities.Managers
             {
                 Logger.Error($"Failed to save attributes: {ex.Message}");
             }
+        }
+
+        public static async Task GrantAll(string accountId)
+        {
+            Config config = Config.GetConfig();
+            List<string> cosmeticFiles = await Program._fileProviderManager.LoadAllCosmeticsAsync();
+            Repository<Items> itemRepository = new Repository<Items>(config.ConnectionUrl);
+            var itemsToSave = new ConcurrentBag<Items>(); 
+
+            var cosmeticTypeMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "characters", "AthenaCharacter" },
+                { "backpacks", "AthenaBackpack" },
+                { "pickaxes", "AthenaPickaxe" },
+                { "dances", "AthenaDance" },
+                { "musicpacks", "AthenaMusicPack" },
+                { "pets", "AthenaBackpack" },
+                { "sprays", "AthenaDance" },
+                { "toys", "AthenaDance" },
+                { "loadingscreens", "AthenaLoadingScreen" },
+                { "wraps", "AthenaItemWrap" },
+                { "gliders", "AthenaGlider" },
+                { "contrails", "AthenaSkyDiveContrail" },
+                { "petcarriers", "AthenaPetCarrier" },
+                { "battlebuses", "AthenaBattleBus" },
+                { "victoryposes", "AthenaVictoryPose" },
+                { "consumableemotes", "AthenaConsumableEmote" }
+            };
+
+            string GetCosmeticTypeKey(string cosmeticPath)
+            {
+                var pathSegments = cosmeticPath.ToLower().Split('/');
+                return pathSegments.Length > 5 ? pathSegments[5] : string.Empty;
+            }
+
+            await Task.WhenAll(cosmeticFiles.Select(async cosmeticPath =>
+            {
+                var cosmeticName = cosmeticPath.SubstringAfterLast("/").SubstringBefore(".");
+                var cosmeticTypeKey = GetCosmeticTypeKey(cosmeticPath);
+
+                if (cosmeticTypeMapping.TryGetValue(cosmeticTypeKey, out var cosmeticType))
+                {
+                    var templateId = $"{cosmeticType}:{cosmeticName}";
+                    var isAlreadyInDB = itemRepository.FindByTemplateIdAsync(templateId);
+
+                    if (isAlreadyInDB != null) return;
+
+                    var newItem = new Items
+                    {
+                        AccountId = accountId,
+                        ProfileId = "athena",
+                        TemplateId = templateId,
+                        Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
+                        {
+                            item_seen = false,
+                            variants = new List<Variants>(),
+                            xp = 0,
+                            favorite = false
+                        }),
+                        Quantity = 1,
+                        IsStat = false
+                    };
+
+                    await itemRepository.SaveAsync(newItem);
+                    itemsToSave.Add(newItem);
+                }
+                else
+                {
+                    Logger.Error($"Unknown cosmetic type: {cosmeticPath}");
+                }
+            }));
         }
 
         /// <summary>

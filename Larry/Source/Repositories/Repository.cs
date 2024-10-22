@@ -165,8 +165,6 @@ RETURNING id;";
             var result = await connection.QueryFirstOrDefaultAsync<TEntity>(query, new { Value = value });
 
             stopwatch.Stop();
-            Logger.Information($"FindByColumnAsync ({columnName}) took {stopwatch.ElapsedMilliseconds} ms");
-
             return result;
         }
 
@@ -364,8 +362,6 @@ RETURNING id;";
         /// </summary>
         private void EnsureIsCorrectEntity()
         {
-            Log.Information("Finding entity of type {EntityType}", typeof(TEntity).Name);
-
             if (typeof(TEntity) != typeof(User) &&
                 typeof(TEntity) != typeof(Profiles) &&
                 typeof(TEntity) != typeof(Items))

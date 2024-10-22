@@ -55,6 +55,19 @@ namespace Larry.Source.Mappings
         }
 
         /// <summary>
+        /// Gets a list of parameter names for the entity.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        /// <param name="index">The index to append to parameter names.</param>
+        /// <returns>A list of parameter names as strings.</returns>
+        public static IEnumerable<string> GetParameterNames<TEntity>(int index)
+        {
+            var properties = typeof(TEntity).GetProperties();
+            return properties.Where(p => p.GetCustomAttribute<ColumnAttribute>() != null)
+                             .Select(p => $"@{p.Name}_{index}");
+        }
+
+        /// <summary>
         /// Maps the entity properties to the command parameters.
         /// </summary>
         /// <typeparam name="TEntity">The type of the entity.</typeparam>

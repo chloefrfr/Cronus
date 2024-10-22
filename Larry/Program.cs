@@ -12,8 +12,10 @@ using Larry.Source.Utilities.Managers;
 
 namespace Larry
 {
+
     class Program
     {
+        public static FileProviderManager _fileProviderManager;
         static async Task Main(string[] args)
         {
             try
@@ -24,14 +26,17 @@ namespace Larry
 
                 var builder = WebApplication.CreateBuilder(args);
 
+                builder.Services.AddSingleton<Config>(Config.GetConfig());
+
                 builder.Services.AddControllers();
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Host.UseSerilog();
+                builder.Services.AddSingleton<FileProviderManager>();
 
                 var app = builder.Build();
 
-                var fileProvider = new FileProviderManager(config);
-                await fileProvider.InitializeAsync();
+                _fileProviderManager = app.Services.GetRequiredService<FileProviderManager>();
+                await _fileProviderManager.InitializeAsync(); 
 
 
                 app.UseHttpsRedirection();

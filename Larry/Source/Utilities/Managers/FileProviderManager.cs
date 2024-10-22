@@ -106,25 +106,33 @@ namespace Larry.Source.Utilities.Managers
         /// Loads all cosmetics from a predefined path and logs the number of cosmetics loaded and the time taken.
         /// </summary>
         /// <returns>A list of cosmetic asset paths.</returns>
-        public List<string> LoadAllCosmetics()
+        public async Task<List<string>> LoadAllCosmeticsAsync()
         {
+            if (FileProvider == null)
+            {
+                Logger.Error("FileProvider is not initialized.");
+                return new List<string>();
+            }
             const string cosmeticsPath = "FortniteGame/Content/Athena/Items/Cosmetics";
-            var cosmetics = new List<string>(FileProvider.Files.Count);
+            var cosmetics = new List<string>();
 
             try
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();
 
-                foreach (var file in FileProvider.Files)
+                await Task.Run(() =>
                 {
-                    string key = file.Key;
-
-                    if (key.StartsWith(cosmeticsPath, StringComparison.OrdinalIgnoreCase) &&
-                        key.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
+                    foreach (var file in FileProvider.Files)
                     {
-                        cosmetics.Add(key);
+                        string key = file.Key;
+
+                        if (key.StartsWith(cosmeticsPath, StringComparison.OrdinalIgnoreCase) &&
+                            key.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
+                        {
+                            cosmetics.Add(key);
+                        }
                     }
-                }
+                });
 
                 stopwatch.Stop();
                 Logger.Information($"Loaded {cosmetics.Count} cosmetics in {stopwatch.ElapsedMilliseconds} ms from path '{cosmeticsPath}'.");
