@@ -32,6 +32,7 @@ namespace Larry
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Host.UseSerilog();
                 builder.Services.AddSingleton<FileProviderManager>();
+                builder.Services.AddHttpContextAccessor();
 
                 var app = builder.Build();
 
@@ -42,6 +43,7 @@ namespace Larry
                 app.UseHttpsRedirection();
                 app.UseAuthorization();
                 app.MapControllers();
+                
 
                 app.UseExceptionHandler(errorApp =>
                 {
