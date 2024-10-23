@@ -9,6 +9,7 @@ using Larry.Source.Utilities;
 using Larry.Source.Utilities.Managers;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
+using System.Reactive;
 
 namespace Larry.Source.Controllers.Profile
 {
@@ -96,38 +97,42 @@ namespace Larry.Source.Controllers.Profile
 
             List<object> applyProfileChanges = new List<object>();
 
-            BaseResponse response = null;
-            dynamic body = null;
-
-            switch (operation)
+            var operations = new Dictionary<string, Func<Task<IActionResult>>>
             {
-                case "QueryProfile":
-                    response = await QueryProfile.Init(user.AccountId, profileId);
-                    break;
-                case "EquipBattleRoyaleCustomization":
-                    body = await Request.ReadFromJsonAsync<EquipRequestBody>();
-                    if (body == null)
-                    {
-                        return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));
-                    }
+                { "QueryProfile", async () => Ok(await QueryProfile.Init(user.AccountId, profileId)) },
 
-                    response = await EquipBattleRoyaleCustomization.Init(user.AccountId, profileId, body);
-                    break;
-                case "MarkItemSeen":
-                    body = await Request.ReadFromJsonAsync<MITSRequestBody>();
-                    if (body == null)
-                    {
-                        return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));
-                    }
-                    response = await MarkItemSeen.Init(user.AccountId, profileId, body);
-                    break;
-                default:
-                    Logger.Warning($"Missing operation: {operation}");
-                    response = MCPResponses.Generate(profile, applyProfileChanges, profileId);
-                    break;
+                { "EquipBattleRoyaleCustomization", async () =>
+                    await HandleRequestBody<EquipRequestBody>(body =>
+                        EquipBattleRoyaleCustomization.Init(user.AccountId, profileId, body).AsTask()) },
+
+                { "MarkItemSeen", async () =>
+                    await HandleRequestBody<MITSRequestBody>(body =>
+                        MarkItemSeen.Init(user.AccountId, profileId, body)) },
+
+                { "SetMtxPlatform", async () =>
+                    await HandleRequestBody<MtxPlatformBody>(body =>
+                        SetMtxPlatform.Init(user.AccountId, profileId, body)) }
             };
 
+            if (operations.TryGetValue(operation, out var func))
+            {
+                return await func();
+            }
+
+            Logger.Warning($"Missing operation: {operation}");
+            var response = MCPResponses.Generate(profile, applyProfileChanges, profileId);
             return Ok(response);
+        }
+
+        async Task<IActionResult> HandleRequestBody<T>(Func<T, Task<BaseResponse>> action)
+        {
+            var body = await Request.ReadFromJsonAsync<T>();
+            var timestamp = DateTime.UtcNow.ToString("o");
+            if (body == null)
+            {
+                return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));
+            }
+            return Ok(await action(body));
         }
     }
 }
