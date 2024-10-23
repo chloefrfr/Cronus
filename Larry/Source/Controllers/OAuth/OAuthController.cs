@@ -58,6 +58,8 @@ namespace Larry.Source.Controllers.OAuth
                 return BadRequest(Errors.CreateError((int)HttpStatusCode.BadRequest, Request.Path, "Invalid clientId", timestamp));
             }
 
+            Repository<Tokens> tokensRepository = new Repository<Tokens>(config.ConnectionUrl);
+
             User user = null;
 
             switch (grantType)
@@ -104,7 +106,56 @@ namespace Larry.Source.Controllers.OAuth
                         internal_client = true,
                         client_service = "fortnite"
                     });
+                case "refresh_token":
+                    string refresh_token = body["refresh_token"]?.ToString(); 
 
+                    if (refresh_token == null)
+                    {
+                        return NotFound(Errors.CreateError((int)HttpStatusCode.NotFound, Request.Path, "Failed to find 'refresh_token'.", timestamp));
+                    }
+
+                    refresh_token = refresh_token.Replace("$", "").Replace("eg1~", "");
+
+                    var validToken = await tokensRepository.FindByTokenAndTypeAsync(refresh_token, "refreshtoken");
+
+                    if (validToken == null)
+                    {
+                        Logger.Error("Failed to find token.");
+                        return NotFound(Errors.CreateError((int)HttpStatusCode.NotFound, Request.Path, "Failed to find token.", timestamp));
+                    }
+
+                    user = await userRepository.FindByAccountIdAsync(validToken.AccountId);
+                    if (user == null)
+                    {
+                        return NotFound(Errors.CreateError((int)HttpStatusCode.NotFound, Request.Path, "Failed to find user.", timestamp));
+                    }
+
+                    if (user.Banned)
+                    {
+                        return Unauthorized(Errors.CreateError((int)HttpStatusCode.Unauthorized, HttpContext.Request.Path, $"User '{user.Username} is banned.'", timestamp));
+                    }
+
+                    access_token = await TokenUtilities.CreateAccessToken(clientId, grantType, user);
+
+                    return Ok(new
+                    {
+                        access_token = access_token,
+                        expires_in = 3600,
+                        expires_at = DateTime.UtcNow.AddMonths(1).ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        token_type = "bearer",
+                        refresh_token = body["refresh_token"],
+                        refresh_expires = 86400,
+                        refresh_expires_at = DateTime.UtcNow.AddMonths(1).ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                        account_id = user.AccountId,
+                        client_id = clientId,
+                        internal_client = true,
+                        client_service = "fortnite",
+                        diplayName = user.Username,
+                        app = "fortnite",
+                        in_app_id = user.AccountId,
+                        device_id = Request.Headers["X-Epic-Device-Id"],
+                    });
+                
                 default:
                     Logger.Warning($"Missing Grant: {grantType}");
                     return BadRequest(Errors.CreateError((int)HttpStatusCode.BadRequest, Request.Path, "Invalid grant.", timestamp));
@@ -115,7 +166,6 @@ namespace Larry.Source.Controllers.OAuth
                 return NotFound(Errors.CreateError((int)HttpStatusCode.NotFound, Request.Path, "Failed to find user.", timestamp));
             }
 
-            Repository<Tokens> tokensRepository = new Repository<Tokens>(config.ConnectionUrl);
 
             await tokensRepository.DeleteByTypeAsync(user.AccountId, "accesstoken");
             await tokensRepository.DeleteByTypeAsync(user.AccountId, "refreshtoken");
@@ -189,8 +239,19 @@ namespace Larry.Source.Controllers.OAuth
                 return NotFound(Errors.CreateError(404, Request.Path, "Failed to find user.", timestamp));
             }
 
-            var creationDate = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(decodedToken["creation_date"])).UtcDateTime;
-            var expiresIn = Convert.ToInt32(decodedToken["expires_in"]);
+            if (!decodedToken.TryGetValue("creationDate", out var creationDateValue) || !DateTime.TryParse(creationDateValue.ToString(), out var creationDate))
+            {
+                Logger.Error("Invalid or missing creationDate in token.");
+                return BadRequest(Errors.CreateError(400, Request.Path, "Invalid or missing creationDate in token.", timestamp));
+            }
+
+            if (!decodedToken.TryGetValue("expiresIn", out var expiresInValue) || !int.TryParse(expiresInValue.ToString(), out var expiresIn))
+            {
+                Logger.Error("Invalid or missing expiresIn in token.");
+                return BadRequest(Errors.CreateError(400, Request.Path, "Invalid or missing expiresIn in token.", timestamp));
+            }
+
+            var creationDateUnix = ((DateTimeOffset)creationDate).ToUnixTimeSeconds();
             var expiry = creationDate.AddHours(expiresIn);
 
             return Ok(new

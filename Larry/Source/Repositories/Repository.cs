@@ -355,7 +355,46 @@ RETURNING id;";
             }
         }
 
+        /// <summary>
+        /// Finds an entity by its token and type asynchronously.
+        /// </summary>
+        /// <param name="token">The token to search for.</param>
+        /// <param name="type">The type associated with the token.</param>
+        /// <returns>The entity instance if found; otherwise, null.</returns>
+        public async Task<TEntity> FindByTokenAndTypeAsync(string token, string type)
+        {
+            EnsureTokensEntity();
 
+            var stopwatch = Stopwatch.StartNew();
+            using var connection = CreateConnection();
+            await OpenConnectionAsync(connection);
+
+            var query = $@"
+        SELECT * 
+        FROM {EntityMapper.GetTableName(new TEntity())} 
+        WHERE token = @Token AND type = @Type";
+
+            try
+            {
+                var result = await connection.QueryFirstOrDefaultAsync<TEntity>(query, new { Token = token, Type = type });
+                return result;
+            }
+            catch (NpgsqlException npgsqlEx)
+            {
+                Logger.Error($"PostgreSQL error: {npgsqlEx.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occurred: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                stopwatch.Stop();
+                Logger.Information($"FindByTokenAndTypeAsync took {stopwatch.ElapsedMilliseconds} ms");
+            }
+        }
 
         /// <summary>
         /// Ensures the entity is correct.

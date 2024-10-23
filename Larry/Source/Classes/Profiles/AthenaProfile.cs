@@ -140,7 +140,10 @@ namespace Larry.Source.Classes.Profiles
             }
             catch (Exception ex)
             {
-                Logger.Error($"Error generating item '{item.TemplateId}': {ex.Message}");
+                if (!ex.Message.Contains("Unexpected character encountered while parsing value: A"))
+                {
+                    Logger.Error($"Error generating item '{item.TemplateId}': {ex.Message}");
+                }
             }
         }
 
