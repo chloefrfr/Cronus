@@ -1,6 +1,6 @@
 # Larry
 
-TBD
+Fortnite Backend written in C# and aims to be very performant.
 
 # Database Wrapper TODO
 
@@ -26,3 +26,7 @@ TBD
 - Profile and optimize database queries.
 - Implement caching for frequently accessed data.
 - Add support for different database types (e.g., SQL Server, MySQL, SQLite).
+
+# Submodules
+
+- [CUE4Parse](https://github.com/FabianFG/CUE4Parse)
