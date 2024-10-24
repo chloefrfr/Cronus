@@ -24,11 +24,13 @@ namespace Larry.Source.Controllers.Profile.Operations
 
             var userTask = userRepository.FindByAccountIdAsync(accountId);
             var profileTask = profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
+            var itemTask = itemsRepository.FindByTemplateIdAsync(body.ItemToSlot.Replace("item:", ""));
 
-            await Task.WhenAll(userTask, profileTask);
+            await Task.WhenAll(userTask, profileTask, itemTask);
 
-            var user = await userTask; 
+            var user = await userTask;
             var profile = await profileTask;
+            var item = await itemTask;
 
             if (user == null || profile == null)
             {
@@ -37,13 +39,10 @@ namespace Larry.Source.Controllers.Profile.Operations
             }
 
             var profileChanges = new ConcurrentBag<object>();
-            var itemSlotFixed = body.ItemToSlot.Replace("item:", "");
-            var item = await itemsRepository.FindByTemplateIdAsync(body.ItemToSlot);
 
             if (item != null)
             {
                 var statKey = GetStatKey(body.SlotName, body.IndexWithinSlot);
-
                 if (statKey != null)
                 {
                     var statItem = await itemsRepository.FindByTemplateIdAsync(statKey);
@@ -51,7 +50,7 @@ namespace Larry.Source.Controllers.Profile.Operations
                     if (statItem?.IsStat == true)
                     {
                         UpdateStatItem(body, item, statItem, profileChanges);
-                        await itemsRepository.UpdateAsync(statItem);
+                        await itemsRepository.UpdateAsync(statItem); 
                     }
                 }
             }
@@ -59,10 +58,8 @@ namespace Larry.Source.Controllers.Profile.Operations
             if (profileChanges.Count > 0)
             {
                 profile.Revision++;
-                await profilesRepository.SaveAsync(profile);
+                await profilesRepository.UpdateAsync(profile);
             }
-
-       
 
             Logger.Information($"Execution time {stopwatch.ElapsedMilliseconds} ms");
             return MCPResponses.Generate(profile, profileChanges, profileId);
@@ -119,7 +116,6 @@ namespace Larry.Source.Controllers.Profile.Operations
                     break;
 
                 default:
-                   Console.WriteLine($"test test -> {body.SlotName.ToLower()}");
                     statItem.Value = item.TemplateId;
                     profileChanges.Add(new
                     {

@@ -190,21 +190,20 @@ namespace Larry.Source.Classes.Profiles
                 { "favorite_character", (value, attr) => attr.attributes.favorite_character = value?.ToString() },
                 { "favorite_pickaxe", (value, attr) => attr.attributes.favorite_pickaxe = value?.ToString() },
                 { "favorite_glider", (value, attr) => attr.attributes.favorite_glider = value?.ToString() },
-                { "favorite_backpack", (value, attr) => attr.attributes.favorite_backpack = value?.ToString()  },
-                { "favorite_loadingscreen", (value, attr) => attr.attributes.favorite_loadingscreen = value?.ToString()  },
-                { "favorite_skydivecontrail", (value, attr) => attr.attributes.favorite_skydivecontrail = value?.ToString()  },
-                { "favorite_musicpack", (value, attr) => attr.attributes.favorite_musicpack = value?.ToString()  },
+                { "favorite_backpack", (value, attr) => attr.attributes.favorite_backpack = value?.ToString() },
+                { "favorite_loadingscreen", (value, attr) => attr.attributes.favorite_loadingscreen = value?.ToString() },
+                { "favorite_skydivecontrail", (value, attr) => attr.attributes.favorite_skydivecontrail = value?.ToString() },
+                { "favorite_musicpack", (value, attr) => attr.attributes.favorite_musicpack = value?.ToString() },
                 { "favorite_itemwraps", (value, attr) =>
                     attr.attributes.favorite_itemwraps = value is JToken favoriteDanceToken ? favoriteDanceToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
                 },
-                 { "favorite_dance", (value, attr) =>
+                { "favorite_dance", (value, attr) =>
                     attr.attributes.favorite_dance = value is JToken favoriteDanceToken ? favoriteDanceToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
                 },
                 { "allowed_to_receive_gifts", (value, attr) => attr.attributes.allowed_to_receive_gifts = (bool)value },
                 { "mfa_enabled", (value, attr) => attr.attributes.mfa_enabled = (bool)value },
                 { "allowed_to_send_gifts", (value, attr) => attr.attributes.allowed_to_send_gifts = (bool)value }
             };
-
 
             if (updates.TryGetValue(item.TemplateId, out var updateAction))
             {
@@ -220,8 +219,6 @@ namespace Larry.Source.Classes.Profiles
 
             var allStats = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, "athena");
             var attributes = initialStats.attributes;
-            var favoriteDances = attributes.favorite_dance;
-            var favoriteWraps = attributes.favorite_itemwraps;
 
             var attributeMapping = new Dictionary<string, Action<string>>
             {
@@ -233,39 +230,23 @@ namespace Larry.Source.Classes.Profiles
                 { "favorite_loadingscreen", value => attributes.favorite_loadingscreen = value },
                 { "favorite_musicpack", value => attributes.favorite_musicpack = value },
                 { "favorite_dance", value =>
+                {
+                    if (attributes.favorite_dance is not List<string> favoriteDances)
                     {
-                        if (favoriteDances == null)
-                        {
-                            favoriteDances = new List<string>();
-                        }
-
-                        favoriteDances.Clear();
-
-                        var dances = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-                        foreach (var danceMove in dances)
-                        {
-                            favoriteDances.Add(danceMove);
-                        }
+                        favoriteDances = new List<string>();
+                        attributes.favorite_dance = favoriteDances;
                     }
-                },
+                    UpdateFavoriteItems(value, ref favoriteDances);
+                } },
                 { "favorite_itemwraps", value =>
+                {
+                    if (attributes.favorite_itemwraps is not List<string> favoriteWraps)
                     {
-                        if (favoriteWraps == null)
-                        {
-                            favoriteWraps = new List<string>();
-                        }
-
-                        favoriteWraps.Clear();
-
-                        var wraps = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-                        foreach (var itemWrap in wraps)
-                        {
-                            favoriteWraps.Add(itemWrap);
-                        }
+                        favoriteWraps = new List<string>();
+                        attributes.favorite_itemwraps = favoriteWraps;
                     }
-                },
+                    UpdateFavoriteItems(value, ref favoriteWraps);
+                } },
             };
 
             foreach (var stat in allStats)
@@ -275,6 +256,20 @@ namespace Larry.Source.Classes.Profiles
                     action(stat.Value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Updates a list of favorite items based on a comma-separated string.
+        /// </summary>
+        /// <param name="value">The comma-separated string containing favorite items.</param>
+        /// <param name="favorites">The list to be updated.</param>
+        private void UpdateFavoriteItems(string value, ref List<string> favorites)
+        {
+            favorites ??= new List<string>();
+            favorites.Clear();
+
+            var items = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            favorites.AddRange(items);
         }
 
         /// <summary>
@@ -405,19 +400,6 @@ namespace Larry.Source.Classes.Profiles
                 items = defaultItems,
                 commandRevision = profile.Revision,
             };
-        }
-
-        public ItemDefinition GetItemById(string templateId)
-        {
-            var profile = GetProfile();
-
-            if (!profile.items.TryGetValue(templateId, out var item))
-            {
-                Logger.Error($"Failed to find item with the templateId: {templateId}");
-                return null;
-            }
-
-            return item;
         }
 
         /// <summary>

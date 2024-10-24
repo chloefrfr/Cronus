@@ -62,14 +62,14 @@ DO UPDATE SET {updateSetClause}
 RETURNING id;";
 
             var parameters = new DynamicParameters();
-            parameters.Add("Id", id, DbType.Int32); 
-            parameters.AddDynamicParams(entity); 
+            parameters.Add("Id", id, DbType.Int32);
+            parameters.AddDynamicParams(entity);
 
 
             entity.Id = await connection.ExecuteScalarAsync<int>(query, parameters);
 
             stopwatch.Stop();
-          //  Logger.Information($"SaveAsync took {stopwatch.ElapsedMilliseconds} ms");
+            //  Logger.Information($"SaveAsync took {stopwatch.ElapsedMilliseconds} ms");
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ RETURNING id;";
             var stopwatch = Stopwatch.StartNew();
 
             using var connection = CreateConnection();
-            await OpenConnectionAsync(connection); 
+            await OpenConnectionAsync(connection);
 
             var query = $"SELECT * FROM {EntityMapper.GetTableName(new TEntity())} WHERE {columnName} = @Value";
 

@@ -28,12 +28,6 @@ namespace Larry.Source.Utilities.Managers
     /// </summary>
     public class ProfileManager
     {
-/*        private DefaultFileProvider _fileProvider { get; set; }
-        public ProfileManager(DefaultFileProvider fileProvider)
-        {
-            _fileProvider = fileProvider;
-        }*/
-
         /// <summary>
         /// Asynchronously creates a profile based on the specified type and account ID.
         /// </summary>
@@ -52,6 +46,13 @@ namespace Larry.Source.Utilities.Managers
                 ProfileId = type,
                 Revision = 0
             };
+
+
+            if (string.IsNullOrWhiteSpace(accountId) || string.IsNullOrWhiteSpace(type))
+            {
+                Logger.Error($"Invalid accountId or type: {accountId}, {type}");
+                return null;
+            }
 
             try
             {
@@ -88,6 +89,7 @@ namespace Larry.Source.Utilities.Managers
         private static async Task CreateAthenaProfileAsync(string accountId, Repository<Items> itemsRepository, Larry.Source.Database.Entities.Profiles profile)
         {
             var athenaItems = CreateAthenaItems(accountId);
+            Console.WriteLine(JsonConvert.SerializeObject(profile));
             var athenaProfile = new AthenaProfile(accountId, athenaItems, profile);
             var constructedAthenaProfile = athenaProfile.CreateProfile(accountId, athenaItems, profile);
 
@@ -263,29 +265,6 @@ namespace Larry.Source.Utilities.Managers
                 Quantity = 1,
                 IsStat = true
             };
-        }
-
-        public static async Task<ItemDefinition> GetItemById(string accountId, string profileId, string templateId)
-        {
-            Config config = Config.GetConfig();
-            Repository<Items> itemsRepository = new Repository<Items>(config.ConnectionUrl);
-            Repository<Profiles> profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
-
-            Profiles primaryProfile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
-            List<Items> profileItems = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
-
-
-            ItemDefinition item = null;
-
-            switch (profileId)
-            {
-                case "athena":
-                    var athenaProfile = new AthenaProfile(accountId, profileItems, primaryProfile);
-                    item = athenaProfile.GetItemById(templateId);
-                    break;
-            }
-
-            return item;
         }
 
         /// <summary>
