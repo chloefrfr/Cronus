@@ -1,11 +1,14 @@
-﻿using Larry.Source.Classes.MCP.RequestBody;
+﻿using Larry.Source.Classes.MCP;
+using Larry.Source.Classes.MCP.RequestBody;
 using Larry.Source.Classes.MCP.Response;
+using Larry.Source.Classes.Profile;
 using Larry.Source.Classes.Profiles;
 using Larry.Source.Database.Entities;
 using Larry.Source.Repositories;
 using Larry.Source.Responses;
 using Larry.Source.Utilities;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
@@ -54,6 +57,49 @@ namespace Larry.Source.Controllers.Profile.Operations
                     }
                 }
             }
+            var variantUpdates = body.VariantUpdates;
+            if (variantUpdates != null)
+            {
+                await Task.WhenAll(variantUpdates.Select(async variant =>
+                {
+                    var channel = variant.channel.ToString();
+                    var variantActive = variant.active;
+                    var variantOwned = variant.owned;
+
+                    var deserializedValue = JsonConvert.DeserializeObject<ItemValue>(item.Value) ?? new ItemValue();
+                    if (deserializedValue.variants == null || deserializedValue.variants.Count == 0)
+                    {
+                        deserializedValue.variants = new List<Variants>();
+                    }
+                    var variants = deserializedValue.variants ?? new List<Variants>();
+                    var variantIndex = variants.IndexOf(variants.FirstOrDefault(v => v.channel?.ToString() == channel));
+
+                    if (variantIndex == -1)
+                    {
+                        variants.Add(new Variants
+                        {
+                            channel = channel,
+                            active = variantActive,
+                            owned = variantOwned
+                        });
+                    } else
+                    {
+                        variants[variantIndex].active = variantActive;
+                    }
+
+                    deserializedValue.variants = variants;
+                    item.Value = JsonConvert.SerializeObject(deserializedValue);
+                    await itemsRepository.UpdateAsync(item);
+
+                    profileChanges.Add(new
+                    {
+                        changeType = "itemAttrChanged",
+                        itemId = item.TemplateId,
+                        attributeName = "variants",
+                        attributeValue = variants
+                    });
+                }));
+            }
 
             if (profileChanges.Count > 0)
             {
@@ -64,6 +110,7 @@ namespace Larry.Source.Controllers.Profile.Operations
             Logger.Information($"Execution time {stopwatch.ElapsedMilliseconds} ms");
             return MCPResponses.Generate(profile, profileChanges, profileId);
         }
+
 
         private static string GetStatKey(string slotName, int? indexWithinSlot)
         {
