@@ -171,16 +171,20 @@ namespace Larry.Source.Utilities
             var variant = new Variants
             {
                 channel = channel,
-                active = string.Empty,
-                owned = new List<string>()
+                active = null,
+                owned = new List<string>(options.Length)
             };
 
-            foreach (var option in options)
+            var optionsSpan = options.AsSpan();
+
+            for (int i = 0; i < optionsSpan.Length; i++)
             {
+                ref readonly var option = ref optionsSpan[i];
+
                 if (option.TryGetValue(out FGameplayTag gameplayTag, "CustomizationVariantTag") &&
                     option.TryGetValue(out bool bIsDefault, "bIsDefault"))
                 {
-                    var tagName = ParseChannelName(gameplayTag.TagName.PlainText);
+                    var tagName = gameplayTag.TagName.PlainText;
 
                     if (bIsDefault)
                     {
@@ -190,7 +194,10 @@ namespace Larry.Source.Utilities
                 }
             }
 
+            variant.active ??= string.Empty;
+
             return variant;
         }
+
     }
 }

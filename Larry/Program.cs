@@ -37,7 +37,8 @@ namespace Larry
                 var app = builder.Build();
 
                 _fileProviderManager = app.Services.GetRequiredService<FileProviderManager>();
-                await _fileProviderManager.InitializeAsync(); 
+                await _fileProviderManager.InitializeAsync();
+                await _fileProviderManager.LoadAllCosmeticsAsync();
 
 
                 app.UseHttpsRedirection();

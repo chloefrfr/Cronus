@@ -26,6 +26,9 @@ namespace Larry.Source.Utilities.Managers
     {
         public DefaultFileProvider FileProvider { get; private set; }
         private Config config;
+        private readonly CacheManager<List<Variants>> _variantsCacheManager = new(TimeSpan.FromMinutes(10));
+        private readonly CacheManager<List<string>> _assetsCacheManager = new(TimeSpan.FromMinutes(10));
+        private readonly CacheManager<List<string>> _cosmeticsCacheManager = new(TimeSpan.FromMinutes(10));
 
         public FileProviderManager(Config config)
         {
@@ -94,14 +97,22 @@ namespace Larry.Source.Utilities.Managers
                 return new List<string>();
             }
 
+            if (_assetsCacheManager.TryGetValue(path, out var cachedAssets))
+            {
+                return cachedAssets;
+            }
+
             try
             {
-                // Best intending ever!!
                 var assetFiles = FileProvider.Files
                     .AsParallel()
                     .Where(file => file.Key.StartsWith(path, StringComparison.OrdinalIgnoreCase)
-                                    && file.Key.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase));
-                return assetFiles.Select(file => file.Key).ToList();
+                                   && file.Key.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase));
+                var assetList = assetFiles.Select(file => file.Key).ToList();
+
+                _assetsCacheManager.Set(path, assetList);
+
+                return assetList;
             }
             catch (Exception ex)
             {
@@ -109,6 +120,7 @@ namespace Larry.Source.Utilities.Managers
                 return new List<string>();
             }
         }
+
 
         /// <summary>
         /// Loads all cosmetics from a predefined path and logs the number of cosmetics loaded and the time taken.
@@ -121,8 +133,16 @@ namespace Larry.Source.Utilities.Managers
                 Logger.Error("FileProvider is not initialized.");
                 return new List<string>();
             }
+
             const string cosmeticsPath = "FortniteGame/Content/Athena/Items/Cosmetics";
+
+            if (_cosmeticsCacheManager.TryGetValue(cosmeticsPath, out var cachedCosmetics))
+            {
+                return cachedCosmetics;
+            }
+
             var cosmetics = new List<string>();
+            var stopwatch = Stopwatch.StartNew();
 
             try
             {
@@ -139,6 +159,12 @@ namespace Larry.Source.Utilities.Managers
                         }
                     }
                 });
+
+                _cosmeticsCacheManager.Set(cosmeticsPath, cosmetics);
+
+                stopwatch.Stop(); 
+                Logger.Information($"Loaded {cosmetics.Count} cosmetics in {stopwatch.ElapsedMilliseconds} ms.");
+
                 return cosmetics;
             }
             catch (Exception ex)
@@ -147,7 +173,6 @@ namespace Larry.Source.Utilities.Managers
                 return new List<string>();
             }
         }
-
 
 
         /// <summary>
@@ -159,70 +184,66 @@ namespace Larry.Source.Utilities.Managers
         {
             try
             {
-                var foundItem = (await LoadAllCosmeticsAsync())
-                    .FirstOrDefault(item => item.Contains(templateId, StringComparison.OrdinalIgnoreCase));
-
-                if (foundItem is null)
+                if (_variantsCacheManager.TryGetValue(templateId, out var cachedVariants))
                 {
-                    return new List<Variants>();
+                    return cachedVariants;
                 }
 
-                var itemObj = await FileProvider.LoadObjectAsync(foundItem.SubstringBefore("."));
-                if (itemObj is null)
-                {
-                    return new List<Variants>();
-                }
+                var filteredCosmeticsTask = Task.Run(() => LoadAllCosmeticsAsync());
+                var filteredCosmetics = await filteredCosmeticsTask;
+
+                var foundItem = filteredCosmetics.FirstOrDefault();
+                if (foundItem is null) return new List<Variants>();
+
+                var itemObjTask = FileProvider.LoadObjectAsync(foundItem.Split('.')[0]);
+                var itemObj = await itemObjTask;
+                if (itemObj is null) return new List<Variants>();
 
                 if (!itemObj.TryGetValue(out UObject[] itemVariants, "ItemVariants"))
-                {
                     return new List<Variants>();
-                }
 
-                var variantsList = new List<Variants>(itemVariants.Length);
-                foreach (var variant in itemVariants)
+                var variantTypes = new[]
                 {
-                    variant.TryGetValue(out FGameplayTag variantChannel, "VariantChannelTag");
+                    "PartOptions", "MaterialOptions", "DynamicOptions", "GenericTagOptions",
+                    "LoadoutAugmentations", "ParticleOptions", "MeshOptions"
+                };
 
-                    if (variant.ExportType == "FortCosmeticNumericalVariant")
-                    {
-                        variantsList.Add(new Variants
-                        {
-                            channel = Constants.ParseChannelName(variantChannel.TagName.PlainText),
-                            active = "",
-                            owned = new List<string>()
-                        });
-                    }
+                var variantsList = itemVariants.AsParallel().SelectMany(variant =>
+                {
+                    var variantResults = new List<Variants>();
 
-                    var variantTypes = new[]
-                    {
-                        "PartOptions",
-                        "MaterialOptions",
-                        "DynamicOptions",
-                        "GenericTagOptions",
-                        "LoadoutAugmentations",
-                        "ParticleOptions",
-                        "MeshOptions",
-                    };
-
-                    if (variantChannel != null)
+                    if (variant.TryGetValue(out FGameplayTag variantChannel, "VariantChannelTag") && variantChannel != null)
                     {
                         var parsedChannelName = Constants.ParseChannelName(variantChannel.TagName.PlainText);
 
-                        variantsList.AddRange(variantTypes
+                        if (variant.ExportType == "FortCosmeticNumericalVariant")
+                        {
+                            variantResults.Add(new Variants
+                            {
+                                channel = parsedChannelName,
+                                active = "",
+                                owned = new List<string>()
+                            });
+                        }
+
+                        variantResults.AddRange(variantTypes
                             .Select(type => variant.TryGetValue(out FStructFallback[] options, type) ? options : null)
                             .Where(options => options != null)
                             .Select(options => Constants.CreateVariantFromOptions(options, parsedChannelName)));
                     }
-                }
+
+                    return variantResults;
+                }).ToList();
+
+                _variantsCacheManager.Set(templateId, variantsList);
 
                 return variantsList;
             }
             catch (Exception ex)
             {
-                Logger.Error($"An error occured: {ex.Message}");
+                Logger.Error($"An error occurred: {ex.Message}");
                 return new List<Variants>();
             }
         }
-
     }
 }
