@@ -371,13 +371,14 @@ namespace Larry.Source.Utilities.Managers
                 { "sprays", "AthenaDance" },
                 { "toys", "AthenaDance" },
                 { "loadingscreens", "AthenaLoadingScreen" },
-                { "wraps", "AthenaItemWrap" },
                 { "gliders", "AthenaGlider" },
                 { "contrails", "AthenaSkyDiveContrail" },
                 { "petcarriers", "AthenaPetCarrier" },
                 { "battlebuses", "AthenaBattleBus" },
                 { "victoryposes", "AthenaVictoryPose" },
-                { "consumableemotes", "AthenaConsumableEmote" }
+                { "consumableemotes", "AthenaConsumableEmote" },
+                { "wraps", "AthenaItemWrap" },
+                { "itemwraps", "AthenaItemWrap" }
             };
 
             string GetCosmeticTypeKey(string cosmeticPath)
@@ -395,12 +396,13 @@ namespace Larry.Source.Utilities.Managers
                 {
                     var templateId = $"{cosmeticType}:{cosmeticName}";
                     var isAlreadyInDB = await itemRepository.FindByTemplateIdAsync(templateId);
+                    var variant = await Program._fileProviderManager.GetVariantsAsync(cosmeticPath.SubstringBefore("."));
 
                     if (isAlreadyInDB != null)
                     {
-                        Logger.Warning("???");
                         return;
                     }
+
 
                     var newItem = new Items
                     {
@@ -410,7 +412,7 @@ namespace Larry.Source.Utilities.Managers
                         Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
                         {
                             item_seen = false,
-                            variants = new List<Variants>(),
+                            variants = variant,
                             xp = 0,
                             favorite = false
                         }),
@@ -423,7 +425,7 @@ namespace Larry.Source.Utilities.Managers
                 }
                 else
                 {
-                    Logger.Error($"Unknown cosmetic type: {cosmeticPath}");
+                    Logger.Error($"Unknown cosmetic type: {cosmeticName}");
                 }
             }));
         }

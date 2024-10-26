@@ -135,7 +135,8 @@ namespace Larry.Source.Classes.Profiles
                 }
                 else
                 {
-                    UpdateItemDefinitions(item, deserializedValue, defaultItems);
+                    var itemValue = JsonConvert.DeserializeObject<ItemValue>(item.Value) ?? new ItemValue();
+                    UpdateItemDefinitions(item, itemValue, defaultItems);
                 }
             }
             catch (Exception ex)

@@ -22,7 +22,18 @@ namespace Larry.Source.Utilities.Converters
             {
                 throw new ArgumentException("Version must be in the format 'Major.Minor'.", nameof(version));
             }
-            string enumName = $"V{parts[0]}_{parts[1]}";
+
+            if (!int.TryParse(parts[0], out var major) || major < 0)
+            {
+                throw new ArgumentException("Major version must be a non-negative integer.", nameof(version));
+            }
+
+            if (!int.TryParse(parts[1], out var minor) || minor < 0 || minor > 61)
+            {
+                throw new ArgumentException("Minor version must be an integer between 0 and 61.", nameof(version));
+            }
+
+            string enumName = $"V{major}_{minor}";
 
             if (Enum.TryParse<FVersion>(enumName, out var fVersion))
             {

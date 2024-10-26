@@ -6,8 +6,15 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse.UE4.Versions;
+using CUE4Parse.Utils;
+using Discord;
+using Larry.Source.Classes.MCP;
+using Larry.Source.Database.Entities;
 using Larry.Source.Enums;
 using Larry.Source.Utilities.Converters;
 
@@ -34,7 +41,6 @@ namespace Larry.Source.Utilities.Managers
             {
                 FileProvider = new DefaultFileProvider(config.GameDirectory, SearchOption.TopDirectoryOnly, true, new VersionContainer(EGame.GAME_UE4_LATEST));
                 FileProvider.Initialize();
-                FileProvider.LoadLocalization();
 
                 var version = VersionConverter.ConvertToFVersion(config.CurrentVersion);
                 var aesKey = ProviderUtilities.GetAesKey(version);
@@ -120,8 +126,6 @@ namespace Larry.Source.Utilities.Managers
 
             try
             {
-                Stopwatch stopwatch = Stopwatch.StartNew();
-
                 await Task.Run(() =>
                 {
                     foreach (var file in FileProvider.Files)
@@ -135,16 +139,88 @@ namespace Larry.Source.Utilities.Managers
                         }
                     }
                 });
-
-                stopwatch.Stop();
-                Logger.Information($"Loaded {cosmetics.Count} cosmetics in {stopwatch.ElapsedMilliseconds} ms from path '{cosmeticsPath}'.");
-
                 return cosmetics;
             }
             catch (Exception ex)
             {
                 Logger.Error($"Error loading cosmetics from path '{cosmeticsPath}': {ex.Message}");
                 return new List<string>();
+            }
+        }
+
+
+
+        /// <summary>
+        /// Asynchronously gets a list of cosmetic variants based on the specified template ID.
+        /// </summary>
+        /// <param name="templateId">The template ID of the cosmetic item to retrieve variants for.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="Variants"/> associated with the template ID.</returns>
+        public async Task<List<Variants>> GetVariantsAsync(string templateId)
+        {
+            try
+            {
+                var foundItem = (await LoadAllCosmeticsAsync())
+                    .FirstOrDefault(item => item.Contains(templateId, StringComparison.OrdinalIgnoreCase));
+
+                if (foundItem is null)
+                {
+                    return new List<Variants>();
+                }
+
+                var itemObj = await FileProvider.LoadObjectAsync(foundItem.SubstringBefore("."));
+                if (itemObj is null)
+                {
+                    return new List<Variants>();
+                }
+
+                if (!itemObj.TryGetValue(out UObject[] itemVariants, "ItemVariants"))
+                {
+                    return new List<Variants>();
+                }
+
+                var variantsList = new List<Variants>(itemVariants.Length);
+                foreach (var variant in itemVariants)
+                {
+                    variant.TryGetValue(out FGameplayTag variantChannel, "VariantChannelTag");
+
+                    if (variant.ExportType == "FortCosmeticNumericalVariant")
+                    {
+                        variantsList.Add(new Variants
+                        {
+                            channel = Constants.ParseChannelName(variantChannel.TagName.PlainText),
+                            active = "",
+                            owned = new List<string>()
+                        });
+                    }
+
+                    var variantTypes = new[]
+                    {
+                        "PartOptions",
+                        "MaterialOptions",
+                        "DynamicOptions",
+                        "GenericTagOptions",
+                        "LoadoutAugmentations",
+                        "ParticleOptions",
+                        "MeshOptions",
+                    };
+
+                    if (variantChannel != null)
+                    {
+                        var parsedChannelName = Constants.ParseChannelName(variantChannel.TagName.PlainText);
+
+                        variantsList.AddRange(variantTypes
+                            .Select(type => variant.TryGetValue(out FStructFallback[] options, type) ? options : null)
+                            .Where(options => options != null)
+                            .Select(options => Constants.CreateVariantFromOptions(options, parsedChannelName)));
+                    }
+                }
+
+                return variantsList;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"An error occured: {ex.Message}");
+                return new List<Variants>();
             }
         }
 

@@ -1,4 +1,7 @@
-﻿using Larry.Source.Classes.Event;
+﻿using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Objects.GameplayTags;
+using Larry.Source.Classes.Event;
+using Larry.Source.Classes.MCP;
 using Larry.Source.Interfaces;
 
 namespace Larry.Source.Utilities
@@ -130,5 +133,64 @@ namespace Larry.Source.Utilities
                 }
             }
         };
+
+
+        /// <summary>
+        /// Parses and finds the channel name from the tag text.
+        /// </summary>
+        /// <param name="tagText">The tag text to parse.</param>
+        /// <returns>The found channel name.</returns>
+        public static string ParseChannelName(string tagText)
+        {
+            const string propertyPrefix = "Cosmetics.Variant.Property.";
+            const string channelPrefix = "Cosmetics.Variant.Channel.";
+
+            int propertyIndex = tagText.IndexOf(propertyPrefix);
+            if (propertyIndex >= 0)
+            {
+                return tagText.Substring(propertyIndex + propertyPrefix.Length);
+            }
+
+            int channelIndex = tagText.IndexOf(channelPrefix);
+            if (channelIndex >= 0)
+            {
+                return tagText.Substring(channelIndex + channelPrefix.Length);
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Variants"/> instance from an array of option structures based on the specified channel.
+        /// </summary>
+        /// <param name="options">An array of <see cref="FStructFallback"/> structures representing the variant options.</param>
+        /// <param name="channel">The channel name for the variant.</param>
+        /// <returns>A <see cref="Variants"/> object with parsed active and owned properties.</returns>
+        public static Variants CreateVariantFromOptions(FStructFallback[] options, string channel)
+        {
+            var variant = new Variants
+            {
+                channel = channel,
+                active = string.Empty,
+                owned = new List<string>()
+            };
+
+            foreach (var option in options)
+            {
+                if (option.TryGetValue(out FGameplayTag gameplayTag, "CustomizationVariantTag") &&
+                    option.TryGetValue(out bool bIsDefault, "bIsDefault"))
+                {
+                    var tagName = ParseChannelName(gameplayTag.TagName.PlainText);
+
+                    if (bIsDefault)
+                    {
+                        variant.active = tagName;
+                    }
+                    variant.owned.Add(tagName);
+                }
+            }
+
+            return variant;
+        }
     }
 }
