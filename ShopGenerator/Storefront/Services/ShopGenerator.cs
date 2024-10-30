@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 using ShopGenerator.Storefront.Models;
 using ShopGenerator.Storefront.Utilities;
 
@@ -22,6 +23,8 @@ namespace ShopGenerator.Storefront.Services
             var cosmeticsData = await _apiService.GetCosmeticsAsync();
 
             HandleCosmeticData(cosmeticsData);
+
+            Console.WriteLine(JsonConvert.SerializeObject(_items));
 
             // TODO: Add DisplayAssets
         }
@@ -54,7 +57,7 @@ namespace ShopGenerator.Storefront.Services
         {
             Config config = Config.GetConfig();
             return item.Introduction != null &&
-                item.Introduction.BackendValue <= int.Parse(config.CurrentVersion) &&
+                item.Introduction.BackendValue <= int.Parse(config.CurrentVersion.Split(".")[0]) &&
                 item.ShopHistory != null && item.ShopHistory.Count > 0;
         }
     }

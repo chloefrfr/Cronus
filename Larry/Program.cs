@@ -30,6 +30,7 @@ namespace Larry
                 var builder = WebApplication.CreateBuilder(args);
 
                 builder.Services.AddSingleton<Config>(Config.GetConfig());
+                builder.Services.AddMemoryCache();
 
                 builder.Services.AddControllers();
                 builder.Services.AddEndpointsApiExplorer();

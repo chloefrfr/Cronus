@@ -14,10 +14,7 @@ namespace ShopGenerator.Storefront.Utilities
 
         public static Config Load()
         {
-            var solutionDirectory = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName;
-
-            var configFile = Path.Combine(solutionDirectory, "Larry", "Config.json");
-
+            var configFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config.json");
             if (!File.Exists(configFile))
             {
                 throw new FileNotFoundException($"Config file '{configFile}' not found.");

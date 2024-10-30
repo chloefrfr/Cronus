@@ -9,6 +9,8 @@ namespace ShopGenerator.Storefront.Models
 {
     public class APIResponse
     {
+        [JsonPropertyName("status")]
+        public int Status { get; set; }
         [JsonPropertyName("data")]
         public List<JSONResponse> Data { get; set; }
     }

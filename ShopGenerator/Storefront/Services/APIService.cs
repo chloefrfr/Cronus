@@ -2,39 +2,74 @@
 using System.Text.Json;
 using ShopGenerator.Storefront.Models;
 using ShopGenerator.Storefront.Utilities;
+using Microsoft.Extensions.Caching.Memory;
+using System.Text.Json.Serialization;
 
 namespace ShopGenerator.Storefront.Services
 {
     public class APIService : IAPIService
     {
         private readonly HttpClient _httpClient;
+        private readonly IMemoryCache _cache;
+        private const string CosmeticsCacheKey = "CosmeticsData";
 
-        public APIService(HttpClient httpClient)
+        public APIService(HttpClient httpClient, IMemoryCache cache)
         {
             _httpClient = httpClient;
+            _httpClient.DefaultRequestVersion = HttpVersion.Version20; 
+            _cache = cache;
+
+            _ = PreloadCosmeticsDataAsync();
         }
 
         public async Task<List<JSONResponse>> GetCosmeticsAsync()
         {
+            if (_cache.TryGetValue(CosmeticsCacheKey, out List<JSONResponse> cachedData))
+            {
+                return cachedData;
+            }
+
             try
             {
-                var response = await _httpClient.GetAsync(ShopGlobals.CosmeticEndpoint);
+                using var response = await _httpClient.GetAsync(ShopGlobals.CosmeticEndpoint);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new Exception($"Failed to get data: {response.ReasonPhrase}");
+                    Logger.Error($"Failed to get data: {response.ReasonPhrase}");
+                    return new List<JSONResponse>();
                 }
 
-                var content = await response.Content.ReadAsStringAsync();
-                var apiResponse = JsonSerializer.Deserialize<APIResponse>(content);
-                return apiResponse?.Data ?? new List<JSONResponse>();
+                var apiResponse = await JsonSerializer.DeserializeAsync<APIResponse>(
+                    await response.Content.ReadAsStreamAsync(), new JsonSerializerOptions
+                    {
+                        DefaultBufferSize = 1024,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    });
+
+                var cosmeticsData = apiResponse?.Data ?? new List<JSONResponse>();
+
+                _cache.Set(CosmeticsCacheKey, cosmeticsData, TimeSpan.FromMinutes(10)); 
+
+                return cosmeticsData;
             }
-            catch (Exception ex)
+            catch (HttpRequestException httpEx)
             {
-                Logger.Error($"Error retrieving data: {ex.Message}");
+                Logger.Error($"HTTP request error: {httpEx.Message}");
                 throw;
             }
         }
 
+        private async Task PreloadCosmeticsDataAsync()
+        {
+            try
+            {
+                await GetCosmeticsAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Preload of cosmetics data failed: {ex.Message}");
+            }
+        }
     }
 }

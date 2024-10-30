@@ -15,9 +15,5 @@ namespace ShopGenerator.Storefront.Models
         public string Icon { get; set; }
         [JsonPropertyName("featured")]
         public string Featured { get; set; }
-        [JsonPropertyName("lego")]
-        public string Lego { get; set; }
-        [JsonPropertyName("other")]
-        public string Other { get; set; }
     }
 }
