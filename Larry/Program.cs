@@ -9,13 +9,16 @@ using Microsoft.AspNetCore.Diagnostics;
 using System.Net;
 using Newtonsoft.Json;
 using Larry.Source.Utilities.Managers;
+using ShopGenerator.Storefront.Services;
+using Larry.Source.Utilities.Schedule;
 
 namespace Larry
 {
-
     class Program
     {
         public static FileProviderManager _fileProviderManager;
+        private static ShopGenerator.Storefront.Services.ShopGenerator _shopGenerator;
+
         static async Task Main(string[] args)
         {
             try
@@ -32,6 +35,11 @@ namespace Larry
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Host.UseSerilog();
                 builder.Services.AddSingleton<FileProviderManager>();
+                builder.Services.AddHttpClient<IAPIService, APIService>();
+                builder.Services.AddSingleton<ShopGenerator.Storefront.Services.ShopGenerator>();
+
+                builder.Services.AddHostedService<ShopGeneratorScheduler>();
+
                 builder.Services.AddHttpContextAccessor();
 
                 var app = builder.Build();
@@ -40,11 +48,11 @@ namespace Larry
                 await _fileProviderManager.InitializeAsync();
                 await _fileProviderManager.LoadAllCosmeticsAsync();
 
+                _shopGenerator = app.Services.GetRequiredService<ShopGenerator.Storefront.Services.ShopGenerator>();
 
                 app.UseHttpsRedirection();
                 app.UseAuthorization();
                 app.MapControllers();
-                
 
                 app.UseExceptionHandler(errorApp =>
                 {
@@ -82,25 +90,6 @@ namespace Larry
                         await context.HttpContext.Response.WriteAsync(JsonConvert.SerializeObject(error));
                     }
                 });
-/*
-                app.Use(async (ctx, next) =>
-                {
-                    var operationManager = new MCPOperationManager();
-                    var handlers = await operationManager.LoadOperationAsync();
-
-                    var path = ctx.Request.Path.Value?.Trim('/');
-
-                    Logger.Information($"Path: {path}");
-
-                    if (path != null && handlers.TryGetValue(path, out var handler))
-                    {
-                        await handler(ctx);
-                    }
-                    else
-                    {
-                        await next();
-                    }
-                });*/
 
                 var bot = new Bot();
 
