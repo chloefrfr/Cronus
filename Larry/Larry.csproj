@@ -36,6 +36,24 @@
     <NoWarn>*</NoWarn>
     <WarningLevel>0</WarningLevel>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Memory\Assets\Full.ini" />
+    <None Remove="Memory\Assets\Larry.chunk" />
+    <None Remove="Memory\Assets\Larry.manifest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Memory\Assets\Full.ini">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Memory\Assets\Larry.chunk">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Memory\Assets\Larry.manifest">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
     
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.35" />
@@ -46,6 +64,7 @@
     <PackageReference Include="RestSharp" Version="112.1.0" />
     <PackageReference Include="Serilog" Version="4.0.2" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.2" />
@@ -55,10 +74,6 @@
     <ProjectReference Include="..\CUE4Parse\CUE4Parse-Conversion\CUE4Parse-Conversion.csproj" />
     <ProjectReference Include="..\CUE4Parse\CUE4Parse\CUE4Parse.csproj" />
     <ProjectReference Include="..\ShopGenerator\ShopGenerator.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Memory\" />
   </ItemGroup>
 
 </Project>

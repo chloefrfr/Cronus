@@ -42,7 +42,15 @@ namespace Larry.Source.Utilities.Managers
         {
             try
             {
-                FileProvider = new DefaultFileProvider(config.GameDirectory, SearchOption.TopDirectoryOnly, true, new VersionContainer(EGame.GAME_UE4_LATEST));
+                if (decimal.TryParse(config.CurrentVersion, out var currentVersion) && currentVersion >= 18.00m)
+                {
+                    FileProvider = new DefaultFileProvider(config.GameDirectory, SearchOption.TopDirectoryOnly, true, new VersionContainer(EGame.GAME_UE5_LATEST));
+                }
+                else
+                {
+                    FileProvider = new DefaultFileProvider(config.GameDirectory, SearchOption.TopDirectoryOnly, true, new VersionContainer(EGame.GAME_UE4_LATEST));
+                }
+
                 FileProvider.Initialize();
 
                 var version = VersionConverter.ConvertToFVersion(config.CurrentVersion);

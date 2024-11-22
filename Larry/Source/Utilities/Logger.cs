@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using Serilog.Filters;
 
 namespace Larry.Source.Utilities
 {
@@ -8,6 +9,8 @@ namespace Larry.Source.Utilities
         {
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
+                .Filter.ByExcluding(Matching.WithProperty<string>("RequestPath", path =>
+                path?.Contains("/datarouter/api/v1/public/data") ?? false))
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
         }

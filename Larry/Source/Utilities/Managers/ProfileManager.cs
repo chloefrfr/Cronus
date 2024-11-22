@@ -20,6 +20,7 @@ using CUE4Parse.Utils;
 using CUE4Parse.FileProvider;
 using K4os.Compression.LZ4.Internal;
 using System.Collections.Concurrent;
+using Larry.Source.Classes.Profiles.ProfileManagement;
 
 namespace Larry.Source.Utilities.Managers
 {
@@ -89,7 +90,6 @@ namespace Larry.Source.Utilities.Managers
         private static async Task CreateAthenaProfileAsync(string accountId, Repository<Items> itemsRepository, Larry.Source.Database.Entities.Profiles profile)
         {
             var athenaItems = CreateAthenaItems(accountId);
-            Console.WriteLine(JsonConvert.SerializeObject(profile));
             var athenaProfile = new AthenaProfile(accountId, athenaItems, profile);
             var constructedAthenaProfile = athenaProfile.CreateProfile(accountId, athenaItems, profile);
 
@@ -148,8 +148,8 @@ namespace Larry.Source.Utilities.Managers
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_loadingscreen", ""),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_musicpack", ""),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>()),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_itemwraps", new List<string>())
-
+                CreateStatItem(ProfileIds.Athena, accountId, "favorite_itemwraps", new List<string>()),
+                CreatePreset(ProfileIds.Athena, accountId, "larry_loadout1")
             };
         }
 
@@ -221,6 +221,65 @@ namespace Larry.Source.Utilities.Managers
                 }),
                 Quantity = 1,
                 IsStat = false
+            };
+        }
+
+        /// <summary>
+        /// Creates a new preset with the specified profile ID and template ID.
+        /// </summary>
+        /// <param name="profileId">The ID of the profile the item belongs to.</param>
+        /// <param name="templateId">The template ID of the item.</param>
+        /// <returns>A new instance of <see cref="Items"/>.</returns>
+        private static Items CreatePreset(string profileId, string accountId, string templateId)
+        {
+            return new Items
+            {
+                AccountId = accountId,
+                ProfileId = profileId,
+                TemplateId = templateId,
+                Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
+                {
+                    banner_color_template = "DefaultColor1",
+                    banner_icon_template = "StandardBanner1",
+                    item_seen = true,
+                    locker_name = "PRESET 1",
+                    locker_slots_data = new LockerSlotData
+                    {
+                        slots = new Dictionary<string, LockerSlot>
+                {
+                    { "Backpack", CreateEmptySlot() },
+                    { "Character", CreateSlot(new[] { "AthenaCharacter:CID_001_Athena_Commando_F_Default" }) },
+                    { "Dance", CreateSlot(new string[6]) },
+                    { "Glider", CreateSlot(new[] { "AthenaGlider:DefaultGlider" }) },
+                    { "ItemWrap", CreateSlot(new string[7]) },
+                    { "LoadingScreen", CreateEmptySlot() },
+                    { "MusicPack", CreateEmptySlot() },
+                    { "Pickaxe", CreateSlot(new[] { "AthenaPickaxe:DefaultPickaxe" }) },
+                    { "SkyDiveContrail", CreateEmptySlot() }
+                }
+                    }
+                }),
+                Quantity = 1,
+                IsStat = false
+            };
+        }
+
+
+        private static LockerSlot CreateSlot(string[] items)
+        {
+            return new LockerSlot
+            {
+                activeVariants = new List<ActiveVariant>(items.Length),
+                items = new List<string>(items)
+            };
+        }
+
+        private static LockerSlot CreateEmptySlot()
+        {
+            return new LockerSlot
+            {
+                activeVariants = new List<ActiveVariant>(),
+                items = new List<string>()
             };
         }
 

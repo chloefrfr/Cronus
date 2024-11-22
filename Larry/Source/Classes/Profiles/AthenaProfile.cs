@@ -1,5 +1,6 @@
 ﻿using Larry.Source.Classes.MCP;
 using Larry.Source.Classes.Profile;
+using Larry.Source.Classes.Profiles.ProfileManagement;
 using Larry.Source.Database.Entities;
 using Larry.Source.Database.Entities;
 using Larry.Source.Interfaces;
@@ -11,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace Larry.Source.Classes.Profiles
@@ -21,6 +23,8 @@ namespace Larry.Source.Classes.Profiles
         /// Gets the profile instance.
         /// </summary>
         public IProfile Profile { get; private set; }
+
+        private PresetsManager _presetsManager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AthenaProfile"/> class.
@@ -95,10 +99,16 @@ namespace Larry.Source.Classes.Profiles
                 }
             };
 
+            _presetsManager = new PresetsManager(initialStats, new Items(), "larry_loadout1");
+            _presetsManager.AddLoadout(accountId);
+
             foreach (var item in items)
             {
                 GenerateItem(item, defaultItems, initialStats, accountId);
             }
+
+            //_presetsManager.AddLoadout(accountId);
+
 
             return BuildProfileSkeleton(accountId, defaultItems, initialStats, profile);
         }
@@ -122,7 +132,6 @@ namespace Larry.Source.Classes.Profiles
                 {
                     if (deserializedValue == null)
                         return;
-
 
                     try
                     {
@@ -281,28 +290,86 @@ namespace Larry.Source.Classes.Profiles
         /// <param name="defaultItems">The dictionary of item definitions to update.</param>
         private void UpdateItemDefinitions(Items item, dynamic deserializedValue, Dictionary<string, ItemDefinition> defaultItems)
         {
-            var attributesDict = new Dictionary<string, object>
+            if (defaultItems == null)
             {
-                { "favorite", deserializedValue.favorite ?? false },
-                { "item_seen", deserializedValue.item_seen ?? false },
-                { "xp", deserializedValue.xp ?? 0 },
-                { "variants", deserializedValue.variants ?? new List<object>() }
-            };
+                Logger.Error("defaultItems is null.");
+                return;
+            }
 
-            if (defaultItems.ContainsKey(item.TemplateId))
+            if (deserializedValue == null)
             {
-                defaultItems[item.TemplateId].quantity = item.Quantity;
-                defaultItems[item.TemplateId].attributes = MapToItemValue(attributesDict);
+                Logger.Error("deserializedValue is null.");
+                return;
+            }
+
+            if (item.TemplateId.Contains("larry_loadout1"))
+            {
+                var presetsDict = new Dictionary<string, object>
+                {
+                    { "banner_color_template", deserializedValue.banner_color_template ?? "" },
+                    { "banner_icon_template", deserializedValue.banner_icon_template ?? "" },
+                    { "item_seen", deserializedValue.item_seen ?? false },
+                    { "locker_name", deserializedValue.locker_name ?? "" },
+                    { "locker_slots_data", deserializedValue.locker_slots_data ?? new LockerSlotData() }
+                };
+
+                if (defaultItems.ContainsKey(item.TemplateId))
+                {
+                    defaultItems[item.TemplateId].quantity = item.Quantity;
+                    defaultItems[item.TemplateId].attributes = MapToItemValueForPresets(presetsDict); 
+                }
+                else
+                {
+                    defaultItems[item.TemplateId] = new ItemDefinition
+                    {
+                        templateId = item.TemplateId,
+                        quantity = item.Quantity,
+                        attributes = MapToItemValueForPresets(presetsDict) 
+                    };
+                }
             }
             else
             {
-                defaultItems[item.TemplateId] = new ItemDefinition
+                var attributesDict = new Dictionary<string, object>
                 {
-                    templateId = item.TemplateId,
-                    quantity = item.Quantity,
-                    attributes = MapToItemValue(attributesDict)
+                    { "favorite", deserializedValue.favorite ?? false },
+                    { "item_seen", deserializedValue.item_seen ?? false },
+                    { "xp", deserializedValue.xp ?? 0 },
+                    { "variants", deserializedValue.variants ?? new List<object>() }
                 };
+
+                if (defaultItems.ContainsKey(item.TemplateId))
+                {
+                    defaultItems[item.TemplateId].quantity = item.Quantity;
+                    defaultItems[item.TemplateId].attributes = MapToItemValue(attributesDict); 
+                }
+                else
+                {
+                    defaultItems[item.TemplateId] = new ItemDefinition
+                    {
+                        templateId = item.TemplateId,
+                        quantity = item.Quantity,
+                        attributes = MapToItemValue(attributesDict)  
+                    };
+                }
             }
+        }
+
+        /// <summary>
+        /// Maps a dictionary of preset attributes to an <see cref="ItemValue"/> for presets.
+        /// </summary>
+        /// <param name="presets">The presets dictionary.</param>
+        /// <returns>The mapped <see cref="ItemValue"/> for presets.</returns>
+        private ItemValue MapToItemValueForPresets(Dictionary<string, object> presets)
+        {
+            return new ItemValue
+            {
+                banner_color_template = GetValue<string>(presets, "banner_color_template"),
+                banner_icon_template = GetValue<string>(presets, "banner_icon_template"),
+                item_seen = GetValue<bool>(presets, "item_seen"),
+                locker_name = GetValue<string>(presets, "locker_name"),
+                locker_slots_data = GetValue<LockerSlotData>(presets, "locker_slots_data")
+            };
         }
 
 

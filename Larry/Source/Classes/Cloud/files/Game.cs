@@ -83,6 +83,9 @@ bNoInGameMatchmaking=true
 [VoiceChat.EOS]
 bEnabled=true
 
+[/Script/Account.OnlineAccountCommon]
+bEnableWaitingRoom=false
+
 [/Script/FortniteGame.FortChatManager]
 bShouldRequestGeneralChatRooms=true
 bShouldJoinGlobalChat=true

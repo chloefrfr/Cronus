@@ -13,6 +13,11 @@ namespace Larry.Source.Classes.Profile
         public bool favorite { get; set; }
         public string? platform { get; set; }
 
+        public string? banner_color_template { get; set; }
+        public string? banner_icon_template { get; set; }
+        public string? locker_name { get; set; }
+        public LockerSlotData locker_slots_data { get; set; }
+
         public override string ToString()
         {
             return JsonConvert.SerializeObject(this, Formatting.Indented);
