@@ -192,7 +192,7 @@ namespace Larry.Source.Classes.Profiles
                     {
                         defaultItems[item.TemplateId] = new ItemDefinition
                         {
-                            templateId = item.TemplateId,
+                            templateId = "CosmeticLocker:cosmeticlocker_athena",
                             quantity = item.Quantity,
                             attributes = new ItemValue
                             {
@@ -223,7 +223,7 @@ namespace Larry.Source.Classes.Profiles
                     {
                         defaultItems[item.TemplateId] = new ItemDefinition
                         {
-                            templateId = item.TemplateId,
+                            templateId = "CosmeticLocker:cosmeticlocker_athena",
                             quantity = item.Quantity,
                             attributes = MapToItemValue(attributesDict)
                         };

@@ -150,7 +150,7 @@ namespace Larry.Source.Utilities.Managers
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>()),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_itemwraps", new List<string>()),
                 CreatePreset(ProfileIds.Athena, accountId, "larry_loadout1"),
-                CreatePreset(ProfileIds.Athena, accountId, "sandbox_loadout")
+            //    CreatePreset(ProfileIds.Athena, accountId, "sandbox_loadout")
             };
         }
 
