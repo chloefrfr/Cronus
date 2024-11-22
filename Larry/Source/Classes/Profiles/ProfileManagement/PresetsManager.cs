@@ -3,6 +3,7 @@ using Larry.Source.Classes.Profile;
 using Larry.Source.Database.Entities;
 using Larry.Source.Interfaces;
 using Larry.Source.Utilities;
+using static SharpGLTF.Scenes.LightBuilder;
 
 namespace Larry.Source.Classes.Profiles.ProfileManagement
 {
@@ -85,42 +86,15 @@ namespace Larry.Source.Classes.Profiles.ProfileManagement
         {
             return new Dictionary<string, LockerSlot>
             {
-                { "Backpack", CreateEmptySlot() },
-                { "Character", CreateSlot(new[] { DefaultCharacter }) },
-                { "Dance", CreateSlot(new string[6]) },
-                { "Glider", CreateSlot(new[] { DefaultGlider }) },
-                { "ItemWrap", CreateSlot(new string[7]) },
-                { "LoadingScreen", CreateEmptySlot() },
-                { "MusicPack", CreateEmptySlot() },
-                { "Pickaxe", CreateSlot(new[] { DefaultPickaxe }) },
-                { "SkyDiveContrail", CreateEmptySlot() }
-            };
-        }
-
-        /// <summary>
-        /// Creates a locker slot with the specified items.
-        /// </summary>
-        /// <param name="items">An array of item IDs to include in the slot.</param>
-        /// <returns>A <see cref="LockerSlot"/> with the specified items.</returns>
-        private LockerSlot CreateSlot(string[] items)
-        {
-            return new LockerSlot
-            {
-                activeVariants = new List<ActiveVariant>(items.Length),
-                items = new List<string>(items)
-            };
-        }
-
-        /// <summary>
-        /// Creates an empty locker slot with no items and no active variants.
-        /// </summary>
-        /// <returns>An empty <see cref="LockerSlot"/>.</returns>
-        private LockerSlot CreateEmptySlot()
-        {
-            return new LockerSlot
-            {
-                activeVariants = new List<ActiveVariant>(),
-                items = new List<string>()
+                { "Pickaxe", new LockerSlot { items = new List<string> { "AthenaPickaxe:DefaultPickaxe" }, activeVariants = new List<ActiveVariant>() } },
+                { "Dance", new LockerSlot { items = new List<string> { "AthenaDance:EID_BoogieDown", "AthenaDance:EID_DanceMoves", "", "", "", "" }, activeVariants = new List<ActiveVariant>() } },
+                { "Glider", new LockerSlot { items = new List<string> { "AthenaGlider:DefaultGlider" }, activeVariants = new List<ActiveVariant>() } },
+                { "Character", new LockerSlot { items = new List<string> { "AthenaCharacter:CID_001_Athena_Commando_F_Default" }, activeVariants = new List<ActiveVariant> { new ActiveVariant { variants = new List<Variants>() } } } },
+                { "Backpack", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { new ActiveVariant { variants = new List<Variants>() } } } },
+                { "ItemWrap", new LockerSlot { items = new List<string> { "", "", "", "", "", "", "" }, activeVariants = new List<ActiveVariant> { null, null, null, null, null, null, null } } },
+                { "LoadingScreen", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } },
+                { "MusicPack", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } },
+                { "SkyDiveContrail", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } }
             };
         }
     }

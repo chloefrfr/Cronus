@@ -87,11 +87,41 @@ namespace Larry.Source.Controllers.Profile
                     ProfileId = "common_public",
                     Revision = 0
                 }, profileChanges, profileId));
+            } else if (profile == null && profileId == "creative")
+            {
+                var profileChanges = new List<object>
+                {
+                    new
+                    {
+                        changeType = "fullProfileUpdate",
+                        profile = new MCPProfile
+                        {
+                            created = DateTime.UtcNow.ToString("o"),
+                            updated = DateTime.UtcNow.ToString("o"),
+                            rvn = 0,
+                            wipeNumber = 1,
+                            accountId = accountId,
+                            profileId = "common_public",
+                            version = "no_version",
+                            stats = new StatsAttributes(),
+                            items = new Dictionary<string, Classes.MCP.ItemDefinition>(),
+                            commandRevision = 0
+                        }
+                    }
+                };
+
+                return Ok(MCPResponses.Generate(new Profiles
+                {
+                    AccountId = accountId,
+                    ProfileId = "creative",
+                    Revision = 0
+                }, profileChanges, profileId));
             }
 
 
             if (profile == null)
             {
+                Logger.Warning($"Missing profile '{profileId}'");
                 return NotFound(Errors.CreateError(404, Request.Path, "Failed to find profile.", timestamp));
             }
 

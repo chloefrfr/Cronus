@@ -14,6 +14,8 @@ using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Larry.Source.Classes.Profiles
 {
@@ -145,7 +147,7 @@ namespace Larry.Source.Classes.Profiles
                 else
                 {
                     var itemValue = JsonConvert.DeserializeObject<ItemValue>(item.Value) ?? new ItemValue();
-                    UpdateItemDefinitions(item, itemValue, defaultItems);
+                    GenerateNonStatItem(item, deserializedValue, defaultItems, accountId);
                 }
             }
             catch (Exception ex)
@@ -155,6 +157,130 @@ namespace Larry.Source.Classes.Profiles
                     Logger.Error($"Error generating item '{item.TemplateId}': {ex.Message}");
                 }
             }
+        }
+
+        private void GenerateNonStatItem(Items item, dynamic deserializedValue, Dictionary<string, ItemDefinition> defaultItems, string accountId)
+        {
+            try
+            {
+                if (deserializedValue == null)
+                {
+                    Logger.Warning($"Item value for '{item.TemplateId}' is null.");
+                    return;
+                }
+                
+                // If it isn't null then that means its a preset.
+                if (deserializedValue.locker_name != null)
+                {
+                    Console.WriteLine($"locker_slots_data type: {deserializedValue.locker_slots_data.GetType()}");
+
+                    var lockerSlotData = deserializedValue.locker_slots_data.ToObject<LockerSlotData>();
+
+                    if (defaultItems.ContainsKey(item.TemplateId))
+                    {
+                        defaultItems[item.TemplateId].quantity = item.Quantity;
+                        defaultItems[item.TemplateId].attributes = new ItemValue
+                        {
+                            banner_color_template = deserializedValue.banner_color_template,
+                            banner_icon_template = deserializedValue.banner_icon_template,
+                            item_seen = deserializedValue.item_seen,
+                            locker_name = deserializedValue.locker_name,
+                            locker_slots_data = lockerSlotData
+                        };
+                    }
+                    else
+                    {
+                        defaultItems[item.TemplateId] = new ItemDefinition
+                        {
+                            templateId = item.TemplateId,
+                            quantity = item.Quantity,
+                            attributes = new ItemValue
+                            {
+                                banner_color_template = deserializedValue.banner_color_template,
+                                banner_icon_template = deserializedValue.banner_icon_template,
+                                item_seen = deserializedValue.item_seen,
+                                locker_name = deserializedValue.locker_name,
+                                locker_slots_data = lockerSlotData
+                            }
+                        };
+                    }
+                } else
+                {
+                    var attributesDict = new Dictionary<string, object>
+                    {
+                        { "favorite", deserializedValue.favorite ?? false },
+                        { "item_seen", deserializedValue.item_seen ?? false },
+                        { "xp", deserializedValue.xp ?? 0 },
+                        { "variants", deserializedValue.variants ?? new List<object>() }
+                    };
+
+                    if (defaultItems.ContainsKey(item.TemplateId))
+                    {
+                        defaultItems[item.TemplateId].quantity = item.Quantity;
+                        defaultItems[item.TemplateId].attributes = MapToItemValue(attributesDict);
+                    }
+                    else
+                    {
+                        defaultItems[item.TemplateId] = new ItemDefinition
+                        {
+                            templateId = item.TemplateId,
+                            quantity = item.Quantity,
+                            attributes = MapToItemValue(attributesDict)
+                        };
+                    }
+                }   
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error generating non-stat item '{item.TemplateId}': {ex.Message}");
+            }
+        }
+
+
+        /// <summary>
+        /// Maps a dictionary of attributes to an <see cref="ItemValue"/>.
+        /// </summary>
+        /// <param name="attributes">The attributes dictionary.</param>
+        /// <returns>The mapped <see cref="ItemValue"/>.</returns>
+        private ItemValue MapToItemValue(Dictionary<string, object> attributes)
+        {
+            return new ItemValue
+            {
+                favorite = GetValue<bool>(attributes, "favorite"),
+                item_seen = GetValue<bool>(attributes, "item_seen"),
+                xp = GetValue<int>(attributes, "xp"),
+                variants = GetVariants(attributes)
+            };
+        }
+
+        /// <summary>
+        /// Safely Gets a value from the attributes dictionary, providing a default if the key does not exist.
+        /// </summary>
+        /// <typeparam name="T">The type of the value to retrieve.</typeparam>
+        /// <param name="attributes">The attributes dictionary.</param>
+        /// <param name="key">The key to look for.</param>
+        /// <returns>The value associated with the key or the default value of the type.</returns>
+        private T GetValue<T>(Dictionary<string, object> attributes, string key)
+        {
+            return attributes.TryGetValue(key, out var value) ? (T)Convert.ChangeType(value, typeof(T)) : default;
+        }
+
+
+        /// <summary>
+        ///Gets a list of variants from the attributes dictionary.
+        /// </summary>
+        /// <param name="attributes">The attributes dictionary.</param>
+        /// <returns>A list of <see cref="Variants"/>.</returns>
+        private List<Variants> GetVariants(Dictionary<string, object> attributes)
+        {
+            return attributes.TryGetValue("variants", out var variants) && variants is IEnumerable<object> varList
+                ? varList.Select(v => new Variants
+                {
+                    channel = (v as dynamic)?.channel ?? string.Empty,
+                    owned = (v as dynamic)?.owned ?? new List<string>(),
+                    active = (v as dynamic)?.active ?? string.Empty
+                }).ToList()
+                : new List<Variants>();
         }
 
         delegate void StatAttributeUpdater(object deserializedValue, StatsAttributes statAttribute);
@@ -174,9 +300,6 @@ namespace Larry.Source.Classes.Profiles
                     attr.attributes.past_seasons = value is JToken token ? token.ToObject<List<PastSeasons>>() ?? new List<PastSeasons>() : new List<PastSeasons>()
                 },
                 { "season_match_boost", (value, attr) => attr.attributes.season_match_boost = Convert.ToInt32(value) },
-                { "loadouts", (value, attr) =>
-                    attr.attributes.loadouts = value is JToken loadoutsToken ? loadoutsToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
-                },
                 { "mfa_reward_claimed", (value, attr) => attr.attributes.mfa_reward_claimed = (bool)value },
                 { "rested_xp_overflow", (value, attr) => attr.attributes.rested_xp_overflow = Convert.ToInt32(value) },
                 { "current_mtx_platform", (value, attr) => attr.attributes.current_mtx_platform = value as string },
@@ -283,97 +406,6 @@ namespace Larry.Source.Classes.Profiles
         }
 
         /// <summary>
-        /// Updates item definitions based on the provided item data and attributes.
-        /// </summary>
-        /// <param name="item">The item to update or add.</param>
-        /// <param name="deserializedValue">The deserialized item data.</param>
-        /// <param name="defaultItems">The dictionary of item definitions to update.</param>
-        private void UpdateItemDefinitions(Items item, dynamic deserializedValue, Dictionary<string, ItemDefinition> defaultItems)
-        {
-            if (defaultItems == null)
-            {
-                Logger.Error("defaultItems is null.");
-                return;
-            }
-
-            if (deserializedValue == null)
-            {
-                Logger.Error("deserializedValue is null.");
-                return;
-            }
-
-            if (item.TemplateId.Contains("larry_loadout1"))
-            {
-                var presetsDict = new Dictionary<string, object>
-                {
-                    { "banner_color_template", deserializedValue.banner_color_template ?? "" },
-                    { "banner_icon_template", deserializedValue.banner_icon_template ?? "" },
-                    { "item_seen", deserializedValue.item_seen ?? false },
-                    { "locker_name", deserializedValue.locker_name ?? "" },
-                    { "locker_slots_data", deserializedValue.locker_slots_data ?? new LockerSlotData() }
-                };
-
-                if (defaultItems.ContainsKey(item.TemplateId))
-                {
-                    defaultItems[item.TemplateId].quantity = item.Quantity;
-                    defaultItems[item.TemplateId].attributes = MapToItemValueForPresets(presetsDict); 
-                }
-                else
-                {
-                    defaultItems[item.TemplateId] = new ItemDefinition
-                    {
-                        templateId = item.TemplateId,
-                        quantity = item.Quantity,
-                        attributes = MapToItemValueForPresets(presetsDict) 
-                    };
-                }
-            }
-            else
-            {
-                var attributesDict = new Dictionary<string, object>
-                {
-                    { "favorite", deserializedValue.favorite ?? false },
-                    { "item_seen", deserializedValue.item_seen ?? false },
-                    { "xp", deserializedValue.xp ?? 0 },
-                    { "variants", deserializedValue.variants ?? new List<object>() }
-                };
-
-                if (defaultItems.ContainsKey(item.TemplateId))
-                {
-                    defaultItems[item.TemplateId].quantity = item.Quantity;
-                    defaultItems[item.TemplateId].attributes = MapToItemValue(attributesDict); 
-                }
-                else
-                {
-                    defaultItems[item.TemplateId] = new ItemDefinition
-                    {
-                        templateId = item.TemplateId,
-                        quantity = item.Quantity,
-                        attributes = MapToItemValue(attributesDict)  
-                    };
-                }
-            }
-        }
-
-        /// <summary>
-        /// Maps a dictionary of preset attributes to an <see cref="ItemValue"/> for presets.
-        /// </summary>
-        /// <param name="presets">The presets dictionary.</param>
-        /// <returns>The mapped <see cref="ItemValue"/> for presets.</returns>
-        private ItemValue MapToItemValueForPresets(Dictionary<string, object> presets)
-        {
-            return new ItemValue
-            {
-                banner_color_template = GetValue<string>(presets, "banner_color_template"),
-                banner_icon_template = GetValue<string>(presets, "banner_icon_template"),
-                item_seen = GetValue<bool>(presets, "item_seen"),
-                locker_name = GetValue<string>(presets, "locker_name"),
-                locker_slots_data = GetValue<LockerSlotData>(presets, "locker_slots_data")
-            };
-        }
-
-
-        /// <summary>
         /// Cleans null attributes from the initial stats.
         /// </summary>
         /// <param name="initialStats">The initial statistics to clean.</param>
@@ -398,49 +430,27 @@ namespace Larry.Source.Classes.Profiles
         }
 
 
-        /// <summary>
-        /// Maps a dictionary of attributes to an <see cref="ItemValue"/>.
-        /// </summary>
-        /// <param name="attributes">The attributes dictionary.</param>
-        /// <returns>The mapped <see cref="ItemValue"/>.</returns>
-        private ItemValue MapToItemValue(Dictionary<string, object> attributes)
+        private Dictionary<string, ItemDefinition> CleanNullAttributesInItems(Dictionary<string, ItemDefinition> defaultItems)
         {
-            return new ItemValue
+            foreach (var key in defaultItems.Keys.ToList())  
             {
-                favorite = GetValue<bool>(attributes, "favorite"),
-                item_seen = GetValue<bool>(attributes, "item_seen"),
-                xp = GetValue<int>(attributes, "xp"),
-                variants = GetVariants(attributes)
-            };
-        }
-
-        /// <summary>
-        /// Safely Gets a value from the attributes dictionary, providing a default if the key does not exist.
-        /// </summary>
-        /// <typeparam name="T">The type of the value to retrieve.</typeparam>
-        /// <param name="attributes">The attributes dictionary.</param>
-        /// <param name="key">The key to look for.</param>
-        /// <returns>The value associated with the key or the default value of the type.</returns>
-        private T GetValue<T>(Dictionary<string, object> attributes, string key)
-        {
-            return attributes.TryGetValue(key, out var value) ? (T)Convert.ChangeType(value, typeof(T)) : default;
-        }
-
-        /// <summary>
-        ///Gets a list of variants from the attributes dictionary.
-        /// </summary>
-        /// <param name="attributes">The attributes dictionary.</param>
-        /// <returns>A list of <see cref="Variants"/>.</returns>
-        private List<Variants> GetVariants(Dictionary<string, object> attributes)
-        {
-            return attributes.TryGetValue("variants", out var variants) && variants is IEnumerable<object> varList
-                ? varList.Select(v => new Variants
+                var item = defaultItems[key];
+                if (item?.attributes != null)
                 {
-                    channel = (v as dynamic)?.channel ?? string.Empty,
-                    owned = (v as dynamic)?.owned ?? new List<string>(),
-                    active = (v as dynamic)?.active ?? string.Empty
-                }).ToList()
-                : new List<Variants>();
+                    string serializedAttributes = JsonConvert.SerializeObject(item.attributes, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+
+                    item.attributes = JsonConvert.DeserializeObject<ItemValue>(serializedAttributes);
+                }
+                else
+                {
+                    item.attributes = new ItemValue();
+                }
+            }
+
+            return defaultItems;
         }
 
         /// <summary>
@@ -455,6 +465,8 @@ namespace Larry.Source.Classes.Profiles
         {
             // Fixes non-declare attributes from showing
             var cleanedStats = CleanNullAttributes(initialStats);
+            // doesnt work but whatever
+            var cleanedItems = CleanNullAttributesInItems(defaultItems);
             return new MCPProfile
             {
                 created = DateTime.UtcNow.ToString("o"),
@@ -465,7 +477,7 @@ namespace Larry.Source.Classes.Profiles
                 profileId = "athena",
                 version = "no_version",
                 stats = cleanedStats,
-                items = defaultItems,
+                items = cleanedItems,
                 commandRevision = profile.Revision,
             };
         }

@@ -149,7 +149,8 @@ namespace Larry.Source.Utilities.Managers
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_musicpack", ""),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>()),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_itemwraps", new List<string>()),
-                CreatePreset(ProfileIds.Athena, accountId, "larry_loadout1")
+                CreatePreset(ProfileIds.Athena, accountId, "larry_loadout1"),
+                CreatePreset(ProfileIds.Athena, accountId, "sandbox_loadout")
             };
         }
 
@@ -236,7 +237,7 @@ namespace Larry.Source.Utilities.Managers
             {
                 AccountId = accountId,
                 ProfileId = profileId,
-                TemplateId = templateId,
+                TemplateId = "CosmeticLocker:cosmeticlocker_athena",
                 Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
                 {
                     banner_color_template = "DefaultColor1",
@@ -246,40 +247,21 @@ namespace Larry.Source.Utilities.Managers
                     locker_slots_data = new LockerSlotData
                     {
                         slots = new Dictionary<string, LockerSlot>
-                {
-                    { "Backpack", CreateEmptySlot() },
-                    { "Character", CreateSlot(new[] { "AthenaCharacter:CID_001_Athena_Commando_F_Default" }) },
-                    { "Dance", CreateSlot(new string[6]) },
-                    { "Glider", CreateSlot(new[] { "AthenaGlider:DefaultGlider" }) },
-                    { "ItemWrap", CreateSlot(new string[7]) },
-                    { "LoadingScreen", CreateEmptySlot() },
-                    { "MusicPack", CreateEmptySlot() },
-                    { "Pickaxe", CreateSlot(new[] { "AthenaPickaxe:DefaultPickaxe" }) },
-                    { "SkyDiveContrail", CreateEmptySlot() }
-                }
+                        {
+                            { "Pickaxe", new LockerSlot { items = new List<string> { "AthenaPickaxe:DefaultPickaxe" }, activeVariants = new List<ActiveVariant>() } },
+                            { "Dance", new LockerSlot { items = new List<string> { "AthenaDance:EID_DanceMoves", "", "", "", "", "" }, activeVariants = new List<ActiveVariant>() } },
+                            { "Glider", new LockerSlot { items = new List<string> { "AthenaGlider:DefaultGlider" }, activeVariants = new List<ActiveVariant>() } },
+                            { "Character", new LockerSlot { items = new List<string> { "AthenaCharacter:CID_001_Athena_Commando_F_Default" }, activeVariants = new List<ActiveVariant> { new ActiveVariant { variants = new List<Variants>() } } } },
+                            { "Backpack", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { new ActiveVariant { variants = new List<Variants>() } } } },
+                            { "ItemWrap", new LockerSlot { items = new List<string> { "", "", "", "", "", "", "" }, activeVariants = new List<ActiveVariant> { null, null, null, null, null, null, null } } },
+                            { "LoadingScreen", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } },
+                            { "MusicPack", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } },
+                            { "SkyDiveContrail", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } }
+                        }
                     }
                 }),
                 Quantity = 1,
                 IsStat = false
-            };
-        }
-
-
-        private static LockerSlot CreateSlot(string[] items)
-        {
-            return new LockerSlot
-            {
-                activeVariants = new List<ActiveVariant>(items.Length),
-                items = new List<string>(items)
-            };
-        }
-
-        private static LockerSlot CreateEmptySlot()
-        {
-            return new LockerSlot
-            {
-                activeVariants = new List<ActiveVariant>(),
-                items = new List<string>()
             };
         }
 
@@ -333,13 +315,13 @@ namespace Larry.Source.Utilities.Managers
         /// <param name="itemsRepository">The repository for items.</param>
         private static async Task SaveItemAttributesAsync(string profileId, string accountId, ItemDefinition item, Repository<Items> itemsRepository, bool isStat)
         {
-            //Console.WriteLine(ie)
             if (item.attributes == null)
             {
                 return;
             }
 
             dynamic relevantAttributes = new System.Dynamic.ExpandoObject();
+            var relevantAttributesDict = (IDictionary<string, object>)relevantAttributes;
 
             var attributesType = item.attributes.GetType();
             foreach (var property in attributesType.GetProperties())
@@ -347,21 +329,59 @@ namespace Larry.Source.Utilities.Managers
                 var jsonProperty = property.GetCustomAttribute<JsonPropertyAttribute>();
                 var jsonPropertyName = jsonProperty != null ? jsonProperty.PropertyName : property.Name;
 
+                var propertyValue = property.GetValue(item.attributes);
+
+                if (propertyValue == null)
+                {
+                    continue;
+                }
+
                 switch (jsonPropertyName)
                 {
                     case "favorite":
-                        ((IDictionary<string, object>)relevantAttributes)["favorite"] = (bool)property.GetValue(item.attributes);
+                        relevantAttributesDict["favorite"] = (bool)propertyValue;
                         break;
                     case "item_seen":
-                        ((IDictionary<string, object>)relevantAttributes)["item_seen"] = (bool)property.GetValue(item.attributes);
+                        relevantAttributesDict["item_seen"] = (bool)propertyValue;
                         break;
                     case "xp":
-                        ((IDictionary<string, object>)relevantAttributes)["xp"] = (int)property.GetValue(item.attributes);
+                        relevantAttributesDict["xp"] = (int)propertyValue;
                         break;
                     case "variants":
-                        ((IDictionary<string, object>)relevantAttributes)["variants"] = (List<Variants>)property.GetValue(item.attributes);
+                        relevantAttributesDict["variants"] = (List<Variants>)propertyValue;
+                        break;
+                    case "banner_color_template":
+                        relevantAttributesDict["banner_color_template"] = propertyValue ?? "";  
+                        break;
+                    case "banner_icon_template":
+                        relevantAttributesDict["banner_icon_template"] = propertyValue ?? "";
+                        break;
+                    case "locker_name":
+                        relevantAttributesDict["locker_name"] = propertyValue ?? ""; 
+                        break;
+                    case "locker_slots_data":
+                        if (propertyValue != null)
+                        {
+                            relevantAttributesDict["locker_slots_data"] = propertyValue;
+                        }
+                        break;
+                    default:
+                        Logger.Warning($"Missing property '{jsonPropertyName}'");
                         break;
                 }
+            }
+
+            var cleanedAttributes = relevantAttributesDict.Where(kv => kv.Value != null).ToDictionary(kv => kv.Key, kv => kv.Value);
+
+            if (cleanedAttributes.Count == 0)
+            {
+                return;
+            }
+
+            relevantAttributes = new System.Dynamic.ExpandoObject();
+            foreach (var kv in cleanedAttributes)
+            {
+                ((IDictionary<string, object>)relevantAttributes)[kv.Key] = kv.Value;
             }
 
             var newItem = new Items
@@ -376,6 +396,7 @@ namespace Larry.Source.Utilities.Managers
 
             await itemsRepository.SaveAsync(newItem);
         }
+
 
         /// <summary>
         /// Asynchronously saves stat attributes for a specified user profile and account.

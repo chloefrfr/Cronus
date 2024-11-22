@@ -51,15 +51,15 @@ namespace Larry.Source.Controllers.Profile.Operations
             var itemUpdateTasks = new List<Task>();
             foreach (var item in allItems)
             {
-                var deserializedValue = JObject.Parse(item.Value ?? "{}");
-                deserializedValue["platform"] = newPlatform;
+                //var deserializedValue = JObject.Parse(item.Value ?? "{}");
+                //deserializedValue["platform"] = newPlatform;
 
-                if (item.IsStat && item.TemplateId == "current_mtx_platform")
-                {
-                    item.Value = newPlatform;
-                }
+                //if (item.IsStat && item.TemplateId == "current_mtx_platform")
+                //{
+                //    item.Value = newPlatform;
+                //}
 
-                itemUpdateTasks.Add(itemsRepository.UpdateAsync(item));
+                //itemUpdateTasks.Add(itemsRepository.UpdateAsync(item));
 
                 profileChanges.Add(new
                 {
@@ -69,12 +69,12 @@ namespace Larry.Source.Controllers.Profile.Operations
                 });
             }
 
-            await Task.WhenAll(itemUpdateTasks);
+        //    await Task.WhenAll(itemUpdateTasks);
 
             if (profileChanges.Count > 0)
             {
                 profile.Revision++;
-                await profilesRepository.UpdateAsync(profile);
+             //   await profilesRepository.UpdateAsync(profile);
             }
 
             Logger.Information($"Execution time {stopwatch.ElapsedMilliseconds} ms");
