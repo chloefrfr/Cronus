@@ -11,6 +11,12 @@ Fortnite Backend written in C# and aims to be very performant.
 - Reliable and Fast caching system.
 - Be able to handle a large amount of requests.
 
+# Contributing
+PLEASE.....
+
+Contributions are welcome...........
+PLEASE IM LOSING MY SANITY 
+
 # Database Wrapper TODO
 
 - Implement a system for managing database migrations.
