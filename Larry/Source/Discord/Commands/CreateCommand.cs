@@ -88,6 +88,7 @@ namespace Larry.Source.Discord.Commands
 
             var config = Config.GetConfig();
             var userRepository = new Repository<User>(config.ConnectionUrl);
+            var loadoutRepository = new Repository<Loadouts>(config.ConnectionUrl);
 
             var user = await userRepository.FindByDiscordIdAsync(discordId.ToString());
 
@@ -105,9 +106,13 @@ namespace Larry.Source.Discord.Commands
                 return;
             }
 
+            
+
             var (hashedPassword, salt) = PasswordHasher.HashPassword(password.ToString());
             Guid guid = Guid.NewGuid();
             var accountId = guid.ToString().Replace("-", "");
+
+
 
             var member = command.User as IGuildUser;
             string[] userRoles = Array.Empty<string>(); 
@@ -134,7 +139,27 @@ namespace Larry.Source.Discord.Commands
                     HasAll = false
                 };
 
+                var newLoadout = new Loadouts
+                {
+                    AccountId = accountId,
+                    ProfileId = "athena",
+                    TemplateId = "CosmeticLocker:cosmeticlocker_athena",
+                    LockerName = "PRESET 1",
+                    BannerId = "",
+                    BannerColorId = "",
+                    CharacterId = "AthenaCharacter:CID_001_Athena_Commando_F_Default",
+                    BackpackId = "",
+                    GliderId = "AthenaGlider:DefaultGlider",
+                    DanceId = "",
+                    PickaxeId = "AthenaPickaxe:DefaultPickaxe",
+                    ItemWrapId = "",
+                    ContrailId = "",
+                    LoadingScreenId = "",
+                    MusicPackId = ""
+                };  
+
                 await userRepository.SaveAsync(newUser).ConfigureAwait(true);
+                await loadoutRepository.SaveAsync(newLoadout).ConfigureAwait(true);
 
                 await ProfileManager.CreateProfileAsync("athena", newUser.AccountId);
                 await ProfileManager.CreateProfileAsync("common_core", newUser.AccountId);

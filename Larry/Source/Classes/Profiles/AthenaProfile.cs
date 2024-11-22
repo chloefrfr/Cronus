@@ -1,5 +1,6 @@
 ﻿using Larry.Source.Classes.MCP;
 using Larry.Source.Classes.Profile;
+using Larry.Source.Classes.Profiles.Builders;
 using Larry.Source.Database.Entities;
 using Larry.Source.Database.Entities;
 using Larry.Source.Interfaces;
@@ -30,12 +31,13 @@ namespace Larry.Source.Classes.Profiles
         /// </summary>
         /// <param name="accountId">The account identifier.</param>
         /// <param name="items">The list of items.</param>
+        /// <param name="loadouts">The list of loadouts.</param>
         /// <param name="profile">The profile</param>
-        public AthenaProfile(string accountId, List<Items> items, Larry.Source.Database.Entities.Profiles profile) : base(null)
+        public AthenaProfile(string accountId, List<Items> items, List<Loadouts> loadouts, Larry.Source.Database.Entities.Profiles profile) : base(null)
         {
             try
             {
-                Profile = CreateProfile(accountId, items, profile);
+                Profile = CreateProfile(accountId, items, loadouts, profile);
             }
             catch (Exception ex)
             {
@@ -48,9 +50,10 @@ namespace Larry.Source.Classes.Profiles
         /// </summary>
         /// <param name="accountId">The account identifier.</param>
         /// <param name="items">The list of items.</param>
+        /// <param name="loadouts">The list of loadouts.</param>
         /// <param name="profile">The profile</param>
         /// <returns>The created profile.</returns>
-        public IProfile CreateProfile(string accountId, List<Items> items, Larry.Source.Database.Entities.Profiles profile)
+        public IProfile CreateProfile(string accountId, List<Items> items, List<Loadouts> loadouts, Larry.Source.Database.Entities.Profiles profile)
         {
             var defaultItems = new Dictionary<string, ItemDefinition>();
             var initialStats = new StatsAttributes
@@ -61,6 +64,7 @@ namespace Larry.Source.Classes.Profiles
                     past_seasons = new List<PastSeasons>(),
                     season_match_boost = 0,
                     loadouts = new List<string>(),
+                    last_applied_loadout = string.Empty,
                     mfa_reward_claimed = false,
                     rested_xp_overflow = 0,
                     current_mtx_platform = "Epic",
@@ -76,6 +80,15 @@ namespace Larry.Source.Classes.Profiles
                     book_xp = 0,
                     creative_dynamic_xp = new Dictionary<string, int>(),
                     season = new Season { numWins = 0, numHighBracket = 0, numLowBracket = 0 },
+                    party_assist_quest = string.Empty,
+                    pinned_quest = string.Empty,
+                    vote_data = new VoteData
+                    {
+                        electionId = string.Empty,
+                        voteHistory = new Dictionary<string, object>(),
+                        votesRemaining = 0,
+                        lastVoteGranted = string.Empty
+                    },
                     lifetime_wins = 0,
                     book_purchased = false,
                     rested_xp_exchange = 1,
@@ -85,23 +98,37 @@ namespace Larry.Source.Classes.Profiles
                     accountLevel = 1,
                     rested_xp_cumulative = 52500,
                     xp = 0,
-                    active_loadout_index = 0,
-                    favorite_character = string.Empty,
-                    favorite_pickaxe = string.Empty,
-                    favorite_glider = string.Empty,
-                    favorite_dance = new List<string>(),
-                    favorite_itemwraps = new List<string>(),
-                    favorite_loadingscreen = string.Empty,
-                    favorite_backpack = string.Empty,
+                    battlestars = 0,
+                    battlestars_season_total = 0,
+                    season_friend_match_boost = 0,
+                    active_loadout_index = 1,
+                    purchased_bp_offers = new List<object>(),
+                    purchased_battle_pass_tier_offers = new List<object>(),
+                    last_match_end_datetime = string.Empty,
+                    mtx_purchase_history_copy = new List<object>(),
+                    favorite_musicpack = string.Empty,
+                    banner_icon = "BRSeason01",
+                    favorite_character = "AthenaCharacter:CID_001_Athena_Commando_F_Default",
+                    favorite_itemwraps = new List<string> { "", "", "", "", "", "", "" },
                     favorite_skydivecontrail = string.Empty,
-                    favorite_musicpack = string.Empty
+                    favorite_pickaxe = string.Empty,
+                    favorite_glider = "AthenaGlider:DefaultGlider",
+                    favorite_backpack = string.Empty,
+                    favorite_dance = new List<string> { "AthenaDance:EID_DanceMoves", "", "", "", "", "", "" },
+                    favorite_loadingscreen = string.Empty,
+                    banner_color = "DefaultColor1"
                 }
             };
 
+            foreach (var newLoadout in loadouts)
+            {
+                initialStats.attributes.loadouts.Add(newLoadout.LockerName);
+                initialStats.attributes.last_applied_loadout = "PRESET 1";
+            }
 
             foreach (var item in items)
             {
-                GenerateItem(item, defaultItems, initialStats, accountId);
+                GenerateItem(item, loadouts, defaultItems, initialStats, accountId);
             }
 
             //_presetsManager.AddLoadout(accountId);
@@ -114,9 +141,10 @@ namespace Larry.Source.Classes.Profiles
         /// Generates an individual item to update the profile's item definitions and stats.
         /// </summary>
         /// <param name="item">The item to process.</param>
+        /// <param name="loadouts">The list of loadouts.</param>
         /// <param name="defaultItems">The dictionary of default items.</param>
         /// <param name="initialStats">The initial stats for the profile.</param>
-        private void GenerateItem(Items item, Dictionary<string, ItemDefinition> defaultItems, StatsAttributes initialStats, string accountId)
+        private void GenerateItem(Items item, List<Loadouts> loadouts, Dictionary<string, ItemDefinition> defaultItems, StatsAttributes initialStats, string accountId)
         {
             if (item == null || item.Value == null)
                 return;
@@ -142,7 +170,7 @@ namespace Larry.Source.Classes.Profiles
                 else
                 {
                     var itemValue = JsonConvert.DeserializeObject<ItemValue>(item.Value) ?? new ItemValue();
-                    GenerateNonStatItem(item, deserializedValue, defaultItems, accountId);
+                    GenerateNonStatItem(item, loadouts, deserializedValue, defaultItems, accountId);
                 }
             }
             catch (Exception ex)
@@ -154,7 +182,7 @@ namespace Larry.Source.Classes.Profiles
             }
         }
 
-        private void GenerateNonStatItem(Items item, dynamic deserializedValue, Dictionary<string, ItemDefinition> defaultItems, string accountId)
+        private void GenerateNonStatItem(Items item, List<Loadouts> loadouts, dynamic deserializedValue, Dictionary<string, ItemDefinition> defaultItems, string accountId)
         {
             try
             {
@@ -163,45 +191,50 @@ namespace Larry.Source.Classes.Profiles
                     Logger.Warning($"Item value for '{item.TemplateId}' is null.");
                     return;
                 }
-                
-                // If it isn't null then that means its a preset.
-                if (deserializedValue.locker_name != null)
-                {
-                    //Console.WriteLine($"locker_slots_data type: {deserializedValue.locker_slots_data.GetType()}");
 
-                    //var lockerSlotData = deserializedValue.locker_slots_data.ToObject<LockerSlotData>();
+                var builtLoadout = LoadoutBuilder.Build(loadouts);
 
-                    //if (defaultItems.ContainsKey(item.TemplateId))
-                    //{
-                    //    defaultItems[item.TemplateId].quantity = item.Quantity;
-                    //    defaultItems[item.TemplateId].attributes = new ItemValue
-                    //    {
-                    //        banner_color_template = deserializedValue.banner_color_template,
-                    //        banner_icon_template = deserializedValue.banner_icon_template,
-                    //        item_seen = deserializedValue.item_seen,
-                    //        locker_name = deserializedValue.locker_name,
-                    //        locker_slots_data = lockerSlotData
-                    //    };
-                    //}
-                    //else
-                    //{
-                    //    defaultItems[item.TemplateId] = new ItemDefinition
-                    //    {
-                    //        templateId = "CosmeticLocker:cosmeticlocker_athena",
-                    //        quantity = item.Quantity,
-                    //        attributes = new ItemValue
-                    //        {
-                    //            banner_color_template = deserializedValue.banner_color_template,
-                    //            banner_icon_template = deserializedValue.banner_icon_template,
-                    //            item_seen = deserializedValue.item_seen,
-                    //            locker_name = deserializedValue.locker_name,
-                    //            locker_slots_data = lockerSlotData
-                    //        }
-                    //    };
-                    //}
-                } else
+                if (builtLoadout != null)
                 {
-                    var attributesDict = new Dictionary<string, object>
+                    foreach (var newLoadout in builtLoadout)
+                    {
+                        var loadout = builtLoadout[newLoadout.Key];
+
+                        var lockerSlotData = loadout.attributes.locker_slots_data;
+
+                        if (defaultItems.ContainsKey(loadout.attributes.locker_name))
+                        {
+                            defaultItems[loadout.attributes.locker_name].quantity = loadout.quantity;
+                            defaultItems[loadout.attributes.locker_name].attributes = new ItemValue
+                            {
+                                banner_color_template = loadout.attributes.banner_color_template,
+                                banner_icon_template = loadout.attributes.banner_icon_template,
+                                item_seen = loadout.attributes.item_seen,
+                                locker_name = loadout.attributes.locker_name,
+                                locker_slots_data = lockerSlotData
+                            };
+                        }
+                        else
+                        {
+                            defaultItems[loadout.attributes.locker_name] = new ItemDefinition
+                            {
+                                templateId = loadout.templateId,
+                                quantity = loadout.quantity,
+                                attributes = new ItemValue
+                                {
+                                    banner_color_template = loadout.attributes.banner_color_template,
+                                    banner_icon_template = loadout.attributes.banner_icon_template,
+                                    item_seen = loadout.attributes.item_seen,
+                                    locker_name = loadout.attributes.locker_name,
+                                    locker_slots_data = lockerSlotData
+                                }
+                            };
+                        }
+                    }
+
+                }
+
+                var attributesDict = new Dictionary<string, object>
                     {
                         { "favorite", deserializedValue.favorite ?? false },
                         { "item_seen", deserializedValue.item_seen ?? false },
@@ -209,21 +242,20 @@ namespace Larry.Source.Classes.Profiles
                         { "variants", deserializedValue.variants ?? new List<object>() }
                     };
 
-                    if (defaultItems.ContainsKey(item.TemplateId))
+                if (defaultItems.ContainsKey(item.TemplateId))
+                {
+                    defaultItems[item.TemplateId].quantity = item.Quantity;
+                    defaultItems[item.TemplateId].attributes = MapToItemValue(attributesDict);
+                }
+                else
+                {
+                    defaultItems[item.TemplateId] = new ItemDefinition
                     {
-                        defaultItems[item.TemplateId].quantity = item.Quantity;
-                        defaultItems[item.TemplateId].attributes = MapToItemValue(attributesDict);
-                    }
-                    else
-                    {
-                        defaultItems[item.TemplateId] = new ItemDefinition
-                        {
-                            templateId = "CosmeticLocker:cosmeticlocker_athena",
-                            quantity = item.Quantity,
-                            attributes = MapToItemValue(attributesDict)
-                        };
-                    }
-                }   
+                        templateId = item.TemplateId,
+                        quantity = item.Quantity,
+                        attributes = MapToItemValue(attributesDict)
+                    };
+                }
             }
             catch (Exception ex)
             {
@@ -288,6 +320,7 @@ namespace Larry.Source.Classes.Profiles
         /// <param name="initialStats">The initial stats for the profile.</param>
         private async void UpdateStats(Items item, dynamic deserializedValue, StatsAttributes initialStats, string accountId)
         {
+
             var updates = new Dictionary<string, StatAttributeUpdater>
             {
                 { "use_random_loadout", (value, attr) => attr.attributes.use_random_loadout = (bool)value },
@@ -315,7 +348,7 @@ namespace Larry.Source.Classes.Profiles
                 { "rested_xp_cumulative", (value, attr) => attr.attributes.rested_xp_cumulative = Convert.ToInt32(value) },
                 { "xp", (value, attr) => attr.attributes.xp = Convert.ToInt32(value) },
                 { "active_loadout_index", (value, attr) => attr.attributes.active_loadout_index = Convert.ToInt32(value) },
-                { "favorite_character", (value, attr) => attr.attributes.favorite_character = value?.ToString() },
+                { "favorite_character", (value, attr) => attr.attributes.favorite_character = (string)value },
                 { "favorite_pickaxe", (value, attr) => attr.attributes.favorite_pickaxe = value?.ToString() },
                 { "favorite_glider", (value, attr) => attr.attributes.favorite_glider = value?.ToString() },
                 { "favorite_backpack", (value, attr) => attr.attributes.favorite_backpack = value?.ToString() },
@@ -323,7 +356,7 @@ namespace Larry.Source.Classes.Profiles
                 { "favorite_skydivecontrail", (value, attr) => attr.attributes.favorite_skydivecontrail = value?.ToString() },
                 { "favorite_musicpack", (value, attr) => attr.attributes.favorite_musicpack = value?.ToString() },
                 { "favorite_itemwraps", (value, attr) =>
-                    attr.attributes.favorite_itemwraps = value is JToken favoriteDanceToken ? favoriteDanceToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
+                    attr.attributes.favorite_itemwraps = value is JToken favoriteItemwrapsToken ? favoriteItemwrapsToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
                 },
                 { "favorite_dance", (value, attr) =>
                     attr.attributes.favorite_dance = value is JToken favoriteDanceToken ? favoriteDanceToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()
@@ -350,13 +383,13 @@ namespace Larry.Source.Classes.Profiles
 
             var attributeMapping = new Dictionary<string, Action<string>>
             {
-                { "favorite_character", value => attributes.favorite_character = value },
-                { "favorite_pickaxe", value => attributes.favorite_pickaxe = value },
-                { "favorite_glider", value => attributes.favorite_glider = value },
-                { "favorite_skydivecontrail", value => attributes.favorite_skydivecontrail = value },
-                { "favorite_backpack", value => attributes.favorite_backpack = value },
-                { "favorite_loadingscreen", value => attributes.favorite_loadingscreen = value },
-                { "favorite_musicpack", value => attributes.favorite_musicpack = value },
+                { "favorite_character", value => attributes.favorite_character = string.IsNullOrWhiteSpace(value) ? null : value.ToString() },
+                { "favorite_pickaxe", value => attributes.favorite_pickaxe = string.IsNullOrWhiteSpace(value) ? null : value },
+                { "favorite_glider", value => attributes.favorite_glider = string.IsNullOrWhiteSpace(value) ? null : value },
+                { "favorite_skydivecontrail", value => attributes.favorite_skydivecontrail = string.IsNullOrWhiteSpace(value) ? null : value },
+                { "favorite_backpack", value => attributes.favorite_backpack = string.IsNullOrWhiteSpace(value) ? null : value },
+                { "favorite_loadingscreen", value => attributes.favorite_loadingscreen = string.IsNullOrWhiteSpace(value) ? null : value },
+                { "favorite_musicpack", value => attributes.favorite_musicpack = string.IsNullOrWhiteSpace(value) ? null : value },
                 { "favorite_dance", value =>
                 {
                     if (attributes.favorite_dance is not List<string> favoriteDances)
@@ -364,7 +397,10 @@ namespace Larry.Source.Classes.Profiles
                         favoriteDances = new List<string>();
                         attributes.favorite_dance = favoriteDances;
                     }
-                    UpdateFavoriteItems(value, ref favoriteDances);
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        UpdateFavoriteItems(value, ref favoriteDances);
+                    }
                 } },
                 { "favorite_itemwraps", value =>
                 {
@@ -373,7 +409,10 @@ namespace Larry.Source.Classes.Profiles
                         favoriteWraps = new List<string>();
                         attributes.favorite_itemwraps = favoriteWraps;
                     }
-                    UpdateFavoriteItems(value, ref favoriteWraps);
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        UpdateFavoriteItems(value, ref favoriteWraps);
+                    }
                 } },
             };
 
@@ -385,6 +424,7 @@ namespace Larry.Source.Classes.Profiles
                 }
             }
         }
+
 
         /// <summary>
         /// Updates a list of favorite items based on a comma-separated string.
@@ -427,26 +467,39 @@ namespace Larry.Source.Classes.Profiles
 
         private Dictionary<string, ItemDefinition> CleanNullAttributesInItems(Dictionary<string, ItemDefinition> defaultItems)
         {
-            foreach (var key in defaultItems.Keys.ToList())  
-            {
-                var item = defaultItems[key];
-                if (item?.attributes != null)
-                {
-                    string serializedAttributes = JsonConvert.SerializeObject(item.attributes, new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Ignore
-                    });
+            var cleanedItem = new Dictionary<string, ItemDefinition>();
+            var cleanedAttributes = new Dictionary<string, ItemValue>();
 
-                    item.attributes = JsonConvert.DeserializeObject<ItemValue>(serializedAttributes);
-                }
-                else
+            foreach (var key in defaultItems.Keys.ToList())
+            {
+                var test = defaultItems[key];
+                foreach (var prop in test.attributes.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
                 {
-                    item.attributes = new ItemValue();
+                    var value = prop.GetValue(test.attributes);
+                    if (value != null && !(value is IList<object> list && list.Count == 0))
+                    {
+                        if (value is ItemValue itemValue)
+                        {
+                            cleanedAttributes.Add(key, itemValue);
+                        }
+                    }
+                }
+
+                foreach (var attr in cleanedAttributes)
+                {
+                    var attribute = cleanedAttributes[attr.Key];
+                    cleanedItem[key] = new ItemDefinition
+                    {
+                        templateId = test.templateId,
+                        attributes = attribute,
+                        quantity = test.quantity
+                    };
                 }
             }
 
-            return defaultItems;
+            return cleanedItem;
         }
+
 
         /// <summary>
         /// Builds a profile skeleton with the given data.
@@ -461,7 +514,7 @@ namespace Larry.Source.Classes.Profiles
             // Fixes non-declare attributes from showing
             var cleanedStats = CleanNullAttributes(initialStats);
             // doesnt work but whatever
-            var cleanedItems = CleanNullAttributesInItems(defaultItems);
+            //var cleanedItems = CleanNullAttributesInItems(defaultItems);
             return new MCPProfile
             {
                 created = DateTime.UtcNow.ToString("o"),
@@ -472,7 +525,7 @@ namespace Larry.Source.Classes.Profiles
                 profileId = "athena",
                 version = "no_version",
                 stats = cleanedStats,
-                items = cleanedItems,
+                items = defaultItems,
                 commandRevision = profile.Revision,
             };
         }

@@ -20,6 +20,7 @@ using CUE4Parse.Utils;
 using CUE4Parse.FileProvider;
 using K4os.Compression.LZ4.Internal;
 using System.Collections.Concurrent;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Larry.Source.Utilities.Managers
 {
@@ -39,6 +40,8 @@ namespace Larry.Source.Utilities.Managers
             var config = Config.GetConfig();
             var profileRepository = new Repository<Profiles>(config.ConnectionUrl);
             var itemsRepository = new Repository<Items>(config.ConnectionUrl);
+
+            var loadoutsRepository = new Repository<Loadouts>(config.ConnectionUrl);
 
             var newProfile = new Profiles
             {
@@ -60,7 +63,8 @@ namespace Larry.Source.Utilities.Managers
                 switch (type)
                 {
                     case ProfileIds.Athena:
-                        await CreateAthenaProfileAsync(accountId, itemsRepository, newProfile);
+                        var loadouts = await loadoutsRepository.GetAllItemsByAccountIdAsync(accountId, "athena");
+                        await CreateAthenaProfileAsync(accountId, itemsRepository, loadouts, newProfile);
                         break;
 
                     case ProfileIds.CommonCore:
@@ -86,11 +90,11 @@ namespace Larry.Source.Utilities.Managers
         /// </summary>
         /// <param name="accountId">The account ID associated with the profile.</param>
         /// <param name="itemsRepository">The repository for managing item data.</param>
-        private static async Task CreateAthenaProfileAsync(string accountId, Repository<Items> itemsRepository, Larry.Source.Database.Entities.Profiles profile)
+        private static async Task CreateAthenaProfileAsync(string accountId, Repository<Items> itemsRepository, List<Loadouts> loadouts, Larry.Source.Database.Entities.Profiles profile)
         {
             var athenaItems = CreateAthenaItems(accountId);
-            var athenaProfile = new AthenaProfile(accountId, athenaItems, profile);
-            var constructedAthenaProfile = athenaProfile.CreateProfile(accountId, athenaItems, profile);
+            var athenaProfile = new AthenaProfile(accountId, athenaItems, loadouts, profile);
+            var constructedAthenaProfile = athenaProfile.CreateProfile(accountId, athenaItems, loadouts, profile);
 
             athenaProfile.Profile.version = $"Larry/{accountId}/${ProfileIds.Athena}/{DateTime.UtcNow:O}";
 
@@ -483,36 +487,40 @@ namespace Larry.Source.Utilities.Managers
 
             try
             {
+                // Cache configuration and reuse repositories
                 Config config = Config.GetConfig();
-                Repository<Items> itemsRepository = new Repository<Items>(config.ConnectionUrl);
-                Repository<Profiles> profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
+                var connectionUrl = config.ConnectionUrl;
 
-                Profiles primaryProfile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
-                List<Items> profileItems = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
+                var itemsRepository = new Repository<Items>(connectionUrl);
+                var loadoutsRepository = new Repository<Loadouts>(connectionUrl);
+                var profilesRepository = new Repository<Profiles>(connectionUrl);
 
+                var primaryProfileTask = profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
+                var profileItemsTask = itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
+                var profileLoadoutsTask = loadoutsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
 
-                IProfile constructedItems = null;
+                await Task.WhenAll(primaryProfileTask, profileItemsTask, profileLoadoutsTask);
 
-                switch (profileId)
+                var primaryProfile = await primaryProfileTask;
+                var profileItems = await profileItemsTask;
+                var profileLoadouts = await profileLoadoutsTask;
+
+                if (primaryProfile == null)
                 {
-                    case "athena":
-                        var athenaBuilder = new AthenaProfile(accountId, profileItems, primaryProfile);
-                        constructedItems = athenaBuilder.GetProfile();
-                        break;
-
-                    case "common_core":
-                        var commonCoreBuilder = new CommonCoreProfile(accountId, profileItems, primaryProfile);
-                        constructedItems = commonCoreBuilder.GetProfile();
-                        break;
-
-                    default:
-                        Logger.Error($"Missing profile: {primaryProfile.ProfileId}");
-                        break;
+                    Logger.Error($"Profile not found: ProfileId: {profileId}, AccountId: {accountId}");
+                    return null;
                 }
+
+                IProfile constructedItems = profileId switch
+                {
+                    "athena" => new AthenaProfile(accountId, profileItems, profileLoadouts, primaryProfile).GetProfile(),
+                    "common_core" => new CommonCoreProfile(accountId, profileItems, primaryProfile).GetProfile(),
+                    _ => null
+                };
 
                 if (constructedItems == null)
                 {
-                    Logger.Error($"constructedItems is null, ProfileId: {primaryProfile.ProfileId}.");
+                    Logger.Error($"Missing or invalid profile: {profileId}");
                     return null;
                 }
 
@@ -525,10 +533,7 @@ namespace Larry.Source.Utilities.Managers
             }
             finally
             {
-                if (timer.IsRunning)
-                {
-                    timer.Stop();
-                }
+                timer.Stop();
             }
         }
     }
