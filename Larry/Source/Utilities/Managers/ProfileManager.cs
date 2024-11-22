@@ -20,7 +20,6 @@ using CUE4Parse.Utils;
 using CUE4Parse.FileProvider;
 using K4os.Compression.LZ4.Internal;
 using System.Collections.Concurrent;
-using Larry.Source.Classes.Profiles.ProfileManagement;
 
 namespace Larry.Source.Utilities.Managers
 {
@@ -149,8 +148,6 @@ namespace Larry.Source.Utilities.Managers
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_musicpack", ""),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>()),
                 CreateStatItem(ProfileIds.Athena, accountId, "favorite_itemwraps", new List<string>()),
-                CreatePreset(ProfileIds.Athena, accountId, "larry_loadout1"),
-            //    CreatePreset(ProfileIds.Athena, accountId, "sandbox_loadout")
             };
         }
 
@@ -219,46 +216,6 @@ namespace Larry.Source.Utilities.Managers
                     level = 1,
                     variants = new List<Variants>(),
                     item_seen = false,
-                }),
-                Quantity = 1,
-                IsStat = false
-            };
-        }
-
-        /// <summary>
-        /// Creates a new preset with the specified profile ID and template ID.
-        /// </summary>
-        /// <param name="profileId">The ID of the profile the item belongs to.</param>
-        /// <param name="templateId">The template ID of the item.</param>
-        /// <returns>A new instance of <see cref="Items"/>.</returns>
-        private static Items CreatePreset(string profileId, string accountId, string templateId)
-        {
-            return new Items
-            {
-                AccountId = accountId,
-                ProfileId = profileId,
-                TemplateId = "CosmeticLocker:cosmeticlocker_athena",
-                Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
-                {
-                    banner_color_template = "DefaultColor1",
-                    banner_icon_template = "StandardBanner1",
-                    item_seen = true,
-                    locker_name = "PRESET 1",
-                    locker_slots_data = new LockerSlotData
-                    {
-                        slots = new Dictionary<string, LockerSlot>
-                        {
-                            { "Pickaxe", new LockerSlot { items = new List<string> { "AthenaPickaxe:DefaultPickaxe" }, activeVariants = new List<ActiveVariant>() } },
-                            { "Dance", new LockerSlot { items = new List<string> { "AthenaDance:EID_DanceMoves", "", "", "", "", "" }, activeVariants = new List<ActiveVariant>() } },
-                            { "Glider", new LockerSlot { items = new List<string> { "AthenaGlider:DefaultGlider" }, activeVariants = new List<ActiveVariant>() } },
-                            { "Character", new LockerSlot { items = new List<string> { "AthenaCharacter:CID_001_Athena_Commando_F_Default" }, activeVariants = new List<ActiveVariant> { new ActiveVariant { variants = new List<Variants>() } } } },
-                            { "Backpack", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { new ActiveVariant { variants = new List<Variants>() } } } },
-                            { "ItemWrap", new LockerSlot { items = new List<string> { "", "", "", "", "", "", "" }, activeVariants = new List<ActiveVariant> { null, null, null, null, null, null, null } } },
-                            { "LoadingScreen", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } },
-                            { "MusicPack", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } },
-                            { "SkyDiveContrail", new LockerSlot { items = new List<string> { "" }, activeVariants = new List<ActiveVariant> { null } } }
-                        }
-                    }
                 }),
                 Quantity = 1,
                 IsStat = false

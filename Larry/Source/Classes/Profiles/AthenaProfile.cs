@@ -1,6 +1,5 @@
 ﻿using Larry.Source.Classes.MCP;
 using Larry.Source.Classes.Profile;
-using Larry.Source.Classes.Profiles.ProfileManagement;
 using Larry.Source.Database.Entities;
 using Larry.Source.Database.Entities;
 using Larry.Source.Interfaces;
@@ -25,8 +24,6 @@ namespace Larry.Source.Classes.Profiles
         /// Gets the profile instance.
         /// </summary>
         public IProfile Profile { get; private set; }
-
-        private PresetsManager _presetsManager;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AthenaProfile"/> class.
@@ -101,8 +98,6 @@ namespace Larry.Source.Classes.Profiles
                 }
             };
 
-            _presetsManager = new PresetsManager(initialStats, new Items(), "larry_loadout1");
-            _presetsManager.AddLoadout(accountId);
 
             foreach (var item in items)
             {
@@ -172,38 +167,38 @@ namespace Larry.Source.Classes.Profiles
                 // If it isn't null then that means its a preset.
                 if (deserializedValue.locker_name != null)
                 {
-                    Console.WriteLine($"locker_slots_data type: {deserializedValue.locker_slots_data.GetType()}");
+                    //Console.WriteLine($"locker_slots_data type: {deserializedValue.locker_slots_data.GetType()}");
 
-                    var lockerSlotData = deserializedValue.locker_slots_data.ToObject<LockerSlotData>();
+                    //var lockerSlotData = deserializedValue.locker_slots_data.ToObject<LockerSlotData>();
 
-                    if (defaultItems.ContainsKey(item.TemplateId))
-                    {
-                        defaultItems[item.TemplateId].quantity = item.Quantity;
-                        defaultItems[item.TemplateId].attributes = new ItemValue
-                        {
-                            banner_color_template = deserializedValue.banner_color_template,
-                            banner_icon_template = deserializedValue.banner_icon_template,
-                            item_seen = deserializedValue.item_seen,
-                            locker_name = deserializedValue.locker_name,
-                            locker_slots_data = lockerSlotData
-                        };
-                    }
-                    else
-                    {
-                        defaultItems[item.TemplateId] = new ItemDefinition
-                        {
-                            templateId = "CosmeticLocker:cosmeticlocker_athena",
-                            quantity = item.Quantity,
-                            attributes = new ItemValue
-                            {
-                                banner_color_template = deserializedValue.banner_color_template,
-                                banner_icon_template = deserializedValue.banner_icon_template,
-                                item_seen = deserializedValue.item_seen,
-                                locker_name = deserializedValue.locker_name,
-                                locker_slots_data = lockerSlotData
-                            }
-                        };
-                    }
+                    //if (defaultItems.ContainsKey(item.TemplateId))
+                    //{
+                    //    defaultItems[item.TemplateId].quantity = item.Quantity;
+                    //    defaultItems[item.TemplateId].attributes = new ItemValue
+                    //    {
+                    //        banner_color_template = deserializedValue.banner_color_template,
+                    //        banner_icon_template = deserializedValue.banner_icon_template,
+                    //        item_seen = deserializedValue.item_seen,
+                    //        locker_name = deserializedValue.locker_name,
+                    //        locker_slots_data = lockerSlotData
+                    //    };
+                    //}
+                    //else
+                    //{
+                    //    defaultItems[item.TemplateId] = new ItemDefinition
+                    //    {
+                    //        templateId = "CosmeticLocker:cosmeticlocker_athena",
+                    //        quantity = item.Quantity,
+                    //        attributes = new ItemValue
+                    //        {
+                    //            banner_color_template = deserializedValue.banner_color_template,
+                    //            banner_icon_template = deserializedValue.banner_icon_template,
+                    //            item_seen = deserializedValue.item_seen,
+                    //            locker_name = deserializedValue.locker_name,
+                    //            locker_slots_data = lockerSlotData
+                    //        }
+                    //    };
+                    //}
                 } else
                 {
                     var attributesDict = new Dictionary<string, object>
