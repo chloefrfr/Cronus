@@ -1,7 +1,10 @@
 # Larry
 
-(Faggot Fortnite Backend Made By A Faggot)
 Fortnite Backend written in C# and aims to be very performant.
+
+# Getting Started
+
+Please read [Getting Started](./SETUP.md) on how to setup the project.
 
 # Goals
 
@@ -12,10 +15,11 @@ Fortnite Backend written in C# and aims to be very performant.
 - Be able to handle a large amount of requests.
 
 # Contributing
+
 PLEASE.....
 
 Contributions are welcome...........
-PLEASE IM LOSING MY SANITY 
+PLEASE IM LOSING MY SANITY
 
 # Database Wrapper TODO
 
