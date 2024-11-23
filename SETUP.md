@@ -46,7 +46,7 @@ Not all fortnite versions are currently supported.
 3. Clone the repository using the following command:
 
 ```bash
-git clone https://github.com/chloefrfr/Larry.git
+git clone --recursive https://github.com/chloefrfr/Larry.git
 ```
 
 # **Step 1: Creating the `Config.json` File**
