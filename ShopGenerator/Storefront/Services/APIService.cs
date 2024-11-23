@@ -22,6 +22,11 @@ namespace ShopGenerator.Storefront.Services
             _ = PreloadCosmeticsDataAsync();
         }
 
+        /// <summary>
+        /// Asynchronously gets cosmetics data from the API.
+        /// Uses caching to avoid redundant API calls.
+        /// </summary>
+        /// <returns>A list of cosmetics data represented by <see cref="JSONResponse"/>.</returns>
         public async Task<List<JSONResponse>> GetCosmeticsAsync()
         {
             if (_cache.TryGetValue(CosmeticsCacheKey, out List<JSONResponse> cachedData))
@@ -60,6 +65,10 @@ namespace ShopGenerator.Storefront.Services
             }
         }
 
+        /// <summary>
+        /// Preloads cosmetics data into the cache to improve initial load performance.
+        /// Logs a warning if preloading fails.
+        /// </summary>
         private async Task PreloadCosmeticsDataAsync()
         {
             try

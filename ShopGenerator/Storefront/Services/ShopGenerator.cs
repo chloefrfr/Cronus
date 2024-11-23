@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
+using ShopGenerator.Storefront.Enums;
+using ShopGenerator.Storefront.Generation;
 using ShopGenerator.Storefront.Models;
 using ShopGenerator.Storefront.RegexMatching;
 using ShopGenerator.Storefront.Utilities;
@@ -9,17 +11,21 @@ namespace ShopGenerator.Storefront.Services
     public class ShopGenerator : IShopGenerator
     {
         private readonly IAPIService _apiService;
-        private readonly Dictionary<string, JSONResponse> _items = new();
-        private readonly Dictionary<string, StoreSet> _sets = new();
-        
+
 
         public ShopGenerator(IAPIService apiService)
         {
             _apiService = apiService;
-            _items = new Dictionary<string, JSONResponse>();
-            _sets = new Dictionary<string, StoreSet>();
+            Constants._items = new Dictionary<string, JSONResponse>();
+            Constants._sets = new Dictionary<string, StoreSet>();
+            Constants._cosmeticTypes = new Dictionary<string, CosmeticTypes>();
         }
 
+
+        /// <summary>
+        /// Asynchronously generates the shop by loading and generating cosmetic data, 
+        /// assigning display assets, and organizing storefront sections.
+        /// </summary>
         public async Task GenerateShopAsync()
         {
             var cosmeticsData = await _apiService.GetCosmeticsAsync();
@@ -28,32 +34,70 @@ namespace ShopGenerator.Storefront.Services
 
             var displayAssets = await LoadDisplayAssetsAsync();
             AssignDisplayAssets(displayAssets);
+
+            foreach (var item in Constants._items.Values
+            .Where(item => item.Type.BackendValue.Contains("AthenaBackpack") && !string.IsNullOrEmpty(item.ItemPreviewHeroPath)))
+            {
+                var cosmeticId = item.ItemPreviewHeroPath.Split("/").LastOrDefault();
+                if (string.IsNullOrEmpty(cosmeticId)) continue;
+
+                if (Constants._items.TryGetValue(cosmeticId, out var cosmetic))
+                {
+                    cosmetic.Backpack = item;
+                }
+            }
+
+            var dailySection = Constants.InitializeStorefront("BRDailyStorefront");
+            var weeklySection = Constants.InitializeStorefront("BRWeeklyStorefront");
+
+            var generation = new ItemGeneration();
+
+            await generation.FillDailyStorefront(dailySection);
+            await generation.FillWeeklyStorefront(weeklySection);
         }
 
+        /// <summary>
+        /// Generates and organizes cosmetic data into items and sets for the shop.
+        /// </summary>
+        /// <param name="cosmetics">The list of cosmetic data found from the API.</param>
         private void HandleCosmeticData(IEnumerable<JSONResponse> cosmetics)
         {
             foreach (var item in cosmetics)
             {
                 if (IsEligibleForShop(item))
                 {
-                    _items[item.Id] = item;
+                    var itemType = item.Type is CosmeticType cosmeticType ? cosmeticType.BackendValue : null;
+
+                    if (itemType != null && Constants._cosmeticTypes.ContainsKey(itemType.ToString()))
+                    {
+                        item.Type.BackendValue = Constants._cosmeticTypes[itemType.ToString()].ToString();
+                    }
+
+                    if (itemType == null) continue;
+
                     if (item.Set != null)
                     {
-                        if (!_sets.ContainsKey(item.Set.BackendValue))
+                        if (!Constants._sets.ContainsKey(item.Set.BackendValue))
                         {
-                            _sets[item.Set.BackendValue] = new StoreSet
+                            Constants._sets[item.Set.BackendValue] = new StoreSet
                             {
                                 Value = item.Set.Value,
                                 Text = item.Set.Text,
                                 Definition = new List<JSONResponse>()
                             };
                         }
-                        _sets[item.Set.BackendValue].Definition.Add(item);
+                        Constants._sets[item.Set.BackendValue].Definition.Add(item);
                     }
+
+                    Constants._items[item.Id] = item;
                 }
             }
         }
 
+        /// <summary>
+        /// Asynchronously loads display assets from the json file.
+        /// </summary>
+        /// <returns>A dictionary containing the display asset paths.</returns>
         private async Task<Dictionary<string, string>> LoadDisplayAssetsAsync()
         {
             var assets = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Memory", "displayAssets.json");
@@ -66,6 +110,11 @@ namespace ShopGenerator.Storefront.Services
             }
         }
 
+        /// <summary>
+        /// Determines if a cosmetic item is eligible to be added to the shop.
+        /// </summary>
+        /// <param name="item">The cosmetic item to check.</param>
+        /// <returns><c>true</c> if the item is eligible; otherwise, <c>false</c>.</returns>
         private bool IsEligibleForShop(JSONResponse item)
         {
             Config config = Config.GetConfig();
@@ -74,6 +123,10 @@ namespace ShopGenerator.Storefront.Services
                 item.ShopHistory != null && item.ShopHistory.Count > 0;
         }
 
+        /// <summary>
+        /// Assigns display asset paths to corresponding cosmetic items.
+        /// </summary>
+        /// <param name="displayAssets">A dictionary containing display asset paths.</param>
         private void AssignDisplayAssets(Dictionary<string, string> displayAssets)
         {
             foreach (var asset in displayAssets)
@@ -81,7 +134,7 @@ namespace ShopGenerator.Storefront.Services
                 var assetParts = asset.Key.Split("_").Skip(1).ToArray();
                 var itemKey = string.Join("_", assetParts);
 
-                if (_items.TryGetValue(itemKey, out var item))
+                if (Constants._items.TryGetValue(itemKey, out var item))
                 {
                     item.NewDisplayAssetPath = asset.Value;
                 } else
@@ -91,7 +144,7 @@ namespace ShopGenerator.Storefront.Services
                         var match = RegexHelper.MatchRegex(itemKey);
                         if (match != null)
                         {
-                            item = _items.Values.FirstOrDefault(i => i.Type.BackendValue.Contains("AthenaCharacter"));
+                            item = Constants._items.Values.FirstOrDefault(i => i.Type.BackendValue.Contains("AthenaCharacter"));
                         }
                     }
                 }
