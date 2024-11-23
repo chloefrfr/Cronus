@@ -24,10 +24,30 @@ Not all fortnite versions are currently supported.
      - `ASP.NET and web development`
 
 3. **[PostgreSQL](https://www.postgresql.org/download/):**
+
    - Download and install the latest version of PostgreSQL.
    - During the installation, remember your username and password for the database.
 
+4. **[Git](https://git-scm.com/downloads):**
+
+   - Download and install Git.
+   - Verify the installation:
+
+   ```bash
+   git --version
+   ```
+
 ## **Setup**
+
+# **Step 0: Cloning the Repository**
+
+1. Open a terminal or command prompt.
+2. Navigate to the directory where you want to clone the repository.
+3. Clone the repository using the following command:
+
+```bash
+git clone https://github.com/chloefrfr/Larry.git
+```
 
 # **Step 1: Creating the `Config.json` File**
 
