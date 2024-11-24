@@ -129,7 +129,7 @@ namespace Larry.Source.Controllers.Profile
 
             var operations = new Dictionary<string, Func<Task<IActionResult>>>
             {
-                { "QueryProfile", async () => Ok(await QueryProfile.Init(user.AccountId, profileId)) },
+                { "QueryProfile", async () => Ok(await QueryProfile.Init(user.AccountId, profileId, Request.Headers["User-Agent"])) },
 
                 { "EquipBattleRoyaleCustomization", async () =>
                     await HandleRequestBody<EquipRequestBody>(body =>

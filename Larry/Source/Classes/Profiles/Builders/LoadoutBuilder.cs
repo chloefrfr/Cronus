@@ -42,26 +42,39 @@ namespace Larry.Source.Classes.Profiles.Builders
                         return acc;
                     }
 
-                    var items = loadouts
-                        .Where(item => item.GetType().GetProperty(dbId)?.GetValue(item) != null) 
-                        .Select(item => item.GetType().GetProperty(dbId)?.GetValue(item)?.ToString()) 
-                        .Where(value => !string.IsNullOrEmpty(value))
-                        .ToList();
+                    List<string> items;
 
-                    if (key == "ItemWrap")
-                        items = Enumerable.Repeat(items, 7).SelectMany(x => x).ToList();
-                    else if (key == "Dance")
-                        items = Enumerable.Repeat(items, 6).SelectMany(x => x).ToList();
+                    if (key == "Dance")
+                    {
+                        items = Enumerable.Repeat(string.Empty, 6).ToList();
+                    }
+                    else if (key == "ItemWrap")
+                    {
+                        items = Enumerable.Repeat(string.Empty, 7).ToList();
+                    }
+                    else if (key == "Backpack" || key == "LoadingScreen" || key == "SkyDiveContrail" || key == "MusicPack")
+                    {
+                        items = new List<string> { string.Empty };
+                    }
+                    else
+                    {
+                        items = loadouts
+                            .Where(item => item.GetType().GetProperty(dbId)?.GetValue(item) != null)
+                            .Select(item => item.GetType().GetProperty(dbId)?.GetValue(item)?.ToString())
+                            .Where(value => !string.IsNullOrEmpty(value))
+                            .ToList();
+                    }
 
                     var newItemSlot = new LockerSlot
                     {
                         items = items,
-                        activeVariants = null 
+                        activeVariants = null
                     };
 
                     acc[key] = newItemSlot;
                     return acc;
                 });
+
 
                 lockerLoadout[loadout.TemplateId] = new ItemDefinition
                 {

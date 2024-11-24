@@ -196,6 +196,8 @@ namespace Larry.Source.Classes.Profiles
                     return;
                 }
 
+                if (item.TemplateId == "CosmeticLocker:cosmeticlocker_athena") return;
+
                 var builtLoadout = LoadoutBuilder.Build(loadouts);
 
                 if (builtLoadout != null)
@@ -239,12 +241,12 @@ namespace Larry.Source.Classes.Profiles
                 }
 
                 var attributesDict = new Dictionary<string, object>
-                    {
-                        { "favorite", deserializedValue.favorite ?? false },
-                        { "item_seen", deserializedValue.item_seen ?? false },
-                        { "xp", deserializedValue.xp ?? 0 },
-                        { "variants", deserializedValue.variants ?? new List<object>() }
-                    };
+                {
+                    { "favorite", (deserializedValue.favorite as bool?).GetValueOrDefault(false) },
+                    { "item_seen", (deserializedValue.item_seen as bool?).GetValueOrDefault(false) },
+                    { "xp", deserializedValue.xp ?? 0 },
+                    { "variants", deserializedValue.variants ?? new List<object>() }
+                };
 
                 if (defaultItems.ContainsKey(item.TemplateId))
                 {

@@ -9,13 +9,16 @@ using Larry.Source.Utilities;
 using Larry.Source.Utilities.Managers;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using System.Text.Json;
+using Larry.Source.Utilities.Parsers;
 
 namespace Larry.Source.Controllers.Profile.Operations
 {
     public class QueryProfile
     {
-        public static async Task<BaseResponse> Init(string accountId, string profileId)
+        public static async Task<BaseResponse> Init(string accountId, string profileId, string userAgent)
         {
             string timestamp = DateTime.UtcNow.ToString("o");
 
@@ -30,6 +33,10 @@ namespace Larry.Source.Controllers.Profile.Operations
             {
                 return new BaseResponse();
             }
+
+
+            var uahelper = UserAgentParser.Parse(userAgent);
+
 
             List<object> applyProfileChanges = new List<object>();
 
@@ -67,7 +74,40 @@ namespace Larry.Source.Controllers.Profile.Operations
 
             if (profile.ProfileId == "athena")
             {
-                // TODO: Add PastSeasons
+                var itemsRepository = new Repository<Items>(config.ConnectionUrl);
+
+                try
+                {
+                    var items = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
+
+                    foreach (var item in items)
+                    {
+                        if (item.IsStat && item.TemplateId == "season_num")
+                        {
+                            try
+                            {
+                                var deserializedValue = JsonConvert.DeserializeObject<dynamic>(item.Value) ?? new JObject();
+
+                                deserializedValue = uahelper.Season.ToString();
+
+                                item.Value = JsonConvert.SerializeObject(deserializedValue);
+
+                                await itemsRepository.UpdateAsync(item);
+                                Logger.Information($"Updated season for item: {item.TemplateId}, New Value: {item.Value}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error($"Error updating item (TemplateId: {item.TemplateId}): {ex.Message}");
+                            }
+                        }
+                    }
+
+                    // TODO: Add PastSeasons
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to get items: {ex.Message}");
+                }
             }
             else if (profile.ProfileId == "common_core")
             {
