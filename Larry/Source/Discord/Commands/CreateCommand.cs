@@ -144,7 +144,7 @@ namespace Larry.Source.Discord.Commands
                     AccountId = accountId,
                     ProfileId = "athena",
                     TemplateId = "CosmeticLocker:cosmeticlocker_athena",
-                    LockerName = "PRESET 1",
+                    LockerName = "Larry",
                     BannerId = "",
                     BannerColorId = "",
                     CharacterId = "AthenaCharacter:CID_001_Athena_Commando_F_Default",

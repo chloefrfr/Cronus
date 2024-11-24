@@ -75,7 +75,7 @@ git clone --recursive https://github.com/chloefrfr/Larry.git
    - **GuildId**: Your Discord server ID.
    - **ClientId**: Can be anything, but it must be unique and secure.
    - **ClientSecret**:Can be anything, but it must be unique and secure.
-   - **GameDirectory**: Path to the Fortnite game directory (must include `FortniteGame` and `Engine` folders).
+   - **GameDirectory**: Path to the Fortnite game directory (eg.. `D:\\FortniteBuilds\\Fortnite 12.41\\FortniteGame\\Content\\Paks`).
    - **CurrentVersion**: The Fortnite build version (e.g., `11.31`).
 
 ## **Step 2: Running the Project**

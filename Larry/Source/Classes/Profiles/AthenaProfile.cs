@@ -6,9 +6,11 @@ using Larry.Source.Database.Entities;
 using Larry.Source.Interfaces;
 using Larry.Source.Repositories;
 using Larry.Source.Utilities;
+using Larry.Source.Utilities.Converters;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
@@ -123,7 +125,7 @@ namespace Larry.Source.Classes.Profiles
             foreach (var newLoadout in loadouts)
             {
                 initialStats.attributes.loadouts.Add(newLoadout.LockerName);
-                initialStats.attributes.last_applied_loadout = "PRESET 1";
+                initialStats.attributes.last_applied_loadout = newLoadout.LockerName;
             }
 
             foreach (var item in items)
@@ -136,6 +138,8 @@ namespace Larry.Source.Classes.Profiles
 
             return BuildProfileSkeleton(accountId, defaultItems, initialStats, profile);
         }
+
+
 
         /// <summary>
         /// Generates an individual item to update the profile's item definitions and stats.
@@ -381,50 +385,60 @@ namespace Larry.Source.Classes.Profiles
             var allStats = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, "athena");
             var attributes = initialStats.attributes;
 
-            var attributeMapping = new Dictionary<string, Action<string>>
+            var attributeMapping = new Dictionary<string, Action<dynamic>>
             {
-                { "favorite_character", value => attributes.favorite_character = string.IsNullOrWhiteSpace(value) ? null : value.ToString() },
-                { "favorite_pickaxe", value => attributes.favorite_pickaxe = string.IsNullOrWhiteSpace(value) ? null : value },
-                { "favorite_glider", value => attributes.favorite_glider = string.IsNullOrWhiteSpace(value) ? null : value },
-                { "favorite_skydivecontrail", value => attributes.favorite_skydivecontrail = string.IsNullOrWhiteSpace(value) ? null : value },
-                { "favorite_backpack", value => attributes.favorite_backpack = string.IsNullOrWhiteSpace(value) ? null : value },
-                { "favorite_loadingscreen", value => attributes.favorite_loadingscreen = string.IsNullOrWhiteSpace(value) ? null : value },
-                { "favorite_musicpack", value => attributes.favorite_musicpack = string.IsNullOrWhiteSpace(value) ? null : value },
-                { "favorite_dance", value =>
-                {
-                    if (attributes.favorite_dance is not List<string> favoriteDances)
-                    {
-                        favoriteDances = new List<string>();
-                        attributes.favorite_dance = favoriteDances;
-                    }
-                    if (!string.IsNullOrWhiteSpace(value))
-                    {
-                        UpdateFavoriteItems(value, ref favoriteDances);
-                    }
-                } },
-                { "favorite_itemwraps", value =>
-                {
-                    if (attributes.favorite_itemwraps is not List<string> favoriteWraps)
-                    {
-                        favoriteWraps = new List<string>();
-                        attributes.favorite_itemwraps = favoriteWraps;
-                    }
-                    if (!string.IsNullOrWhiteSpace(value))
-                    {
-                        UpdateFavoriteItems(value, ref favoriteWraps);
-                    }
-                } },
+                { "favorite_character", value => SetStringValue(ref attributes.favorite_character, value) },
+                { "favorite_pickaxe", value => SetStringValue(ref attributes.favorite_pickaxe, value) },
+                { "favorite_glider", value => SetStringValue(ref attributes.favorite_glider, value) },
+                { "favorite_skydivecontrail", value => SetStringValue(ref attributes.favorite_skydivecontrail, value) },
+                { "favorite_backpack", value => SetStringValue(ref attributes.favorite_backpack, value) },
+                { "favorite_loadingscreen", value => SetStringValue(ref attributes.favorite_loadingscreen, value) },
+                { "favorite_musicpack", value => SetStringValue(ref attributes.favorite_musicpack, value) },
+                { "favorite_dance", value => SetListValue(ref attributes.favorite_dance, value) },
+                { "favorite_itemwraps", value => SetListValue(ref attributes.favorite_itemwraps, value) }
             };
 
             foreach (var stat in allStats)
             {
                 if (stat.IsStat == true && attributeMapping.TryGetValue(stat.TemplateId, out var action))
                 {
-                    action(stat.Value);
+                    action(deserializedValue);
                 }
             }
         }
 
+
+        private void SetStringValue(ref dynamic attribute, dynamic value)
+        {
+            string strValue = value?.ToString()?.Trim();
+            if (string.IsNullOrWhiteSpace(strValue))
+            {
+                attribute = null; 
+            }
+            else
+            {
+                attribute = strValue;
+            }
+        }
+
+        private void SetListValue(ref dynamic attribute, dynamic value)
+        {
+            if (value == null || (value is JToken token && token.Type == JTokenType.Array && token.Count() == 0))
+            {
+                attribute = new List<string>();
+            }
+            else
+            {
+                if (value is JToken jTokenValue && jTokenValue.Type == JTokenType.Array)
+                {
+                    attribute = jTokenValue.ToObject<List<string>>() ?? new List<string>();
+                }
+                else
+                {
+                    attribute = new List<string> { value?.ToString() };
+                }
+            }
+        }
 
         /// <summary>
         /// Updates a list of favorite items based on a comma-separated string.
@@ -511,10 +525,20 @@ namespace Larry.Source.Classes.Profiles
         /// <returns>The built profile.</returns>
         private IProfile BuildProfileSkeleton(string accountId, Dictionary<string, ItemDefinition> defaultItems, StatsAttributes initialStats, Larry.Source.Database.Entities.Profiles profile)
         {
-            // Fixes non-declare attributes from showing
+            // Clean up null attributes in stats
             var cleanedStats = CleanNullAttributes(initialStats);
-            // doesnt work but whatever
-            //var cleanedItems = CleanNullAttributesInItems(defaultItems);
+
+            string serializedItems = JsonConvert.SerializeObject(defaultItems, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore,
+                Formatting = Formatting.Indented
+            });
+
+            var items = JsonConvert.DeserializeObject<Dictionary<string, ItemDefinition>>(serializedItems, new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter> { new IgnoreNullsConverter() }
+            });
+
             return new MCPProfile
             {
                 created = DateTime.UtcNow.ToString("o"),
@@ -525,10 +549,11 @@ namespace Larry.Source.Classes.Profiles
                 profileId = "athena",
                 version = "no_version",
                 stats = cleanedStats,
-                items = defaultItems,
+                items = items,
                 commandRevision = profile.Revision,
             };
         }
+
 
         /// <summary>
         /// Gets the profile associated with this instance.
