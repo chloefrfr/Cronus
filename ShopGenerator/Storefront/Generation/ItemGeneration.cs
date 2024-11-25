@@ -1,4 +1,5 @@
-﻿using ShopGenerator.Storefront.Models;
+﻿using ShopGenerator.Storefront.Enums;
+using ShopGenerator.Storefront.Models;
 using ShopGenerator.Storefront.Utilities;
 using System;
 using System.Collections.Generic;
@@ -58,24 +59,44 @@ namespace ShopGenerator.Storefront.Generation
 
             var addedItemIds = new HashSet<string>();
             
-            while (dailySection.CatalogEntries.Count < 6)
+            try 
             {
-                JSONResponse randomItem = GetRandomItem(addedItemIds);
-
-                if (randomItem.Type.BackendValue == "AthenaCharacter" && characters < 2)
+                while (dailySection.CatalogEntries.Count < 6)
                 {
-                    characters++;
-                }
-                else if (randomItem.Type.BackendValue == "AthenaDance" && dances < 2)
-                {
-                    dances++;
-                }
-                else if (randomItem.Type.BackendValue == "AthenaCharacter" && characters >= 2)
-                {
-                    continue; 
-                }
+                    JSONResponse randomItem = GetRandomItem(addedItemIds);
 
+                    if (randomItem.Type.BackendValue == "AthenaCharacter" && characters < 2)
+                    {
+                        characters++;
+                    }
+                    else if (randomItem.Type.BackendValue == "AthenaDance" && dances < 2)
+                    {
+                        dances++;
+                    }
+                    else if (randomItem.Type.BackendValue == "AthenaCharacter" && characters >= 2)
+                    {
+                        continue;
+                    }
 
+                    var entry = ShopEntry.New(randomItem, Sections.Daily);
+                    if (entry == null)
+                    {
+                        continue;
+                    }
+
+                    dailySection.CatalogEntries.Add(entry);
+                    addedItemIds.Add(randomItem.Id);
+
+                    if (characters == 2 && dances == 2 && dailySection.CatalogEntries.Count >= 6)
+                    {
+                        break;
+                    }
+                } 
+
+            }   
+            catch (Exception ex)
+            {
+                Logger.Error($"Error filling items for daily section: {ex.Message}");
             }
         }
 

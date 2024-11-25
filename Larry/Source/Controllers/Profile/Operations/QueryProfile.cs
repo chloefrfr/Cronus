@@ -10,9 +10,9 @@ using Larry.Source.Utilities.Managers;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 using System.Text.Json;
 using Larry.Source.Utilities.Parsers;
+using System.Threading.Tasks;
 
 namespace Larry.Source.Controllers.Profile.Operations
 {
@@ -20,29 +20,30 @@ namespace Larry.Source.Controllers.Profile.Operations
     {
         public static async Task<BaseResponse> Init(string accountId, string profileId, string userAgent)
         {
-            string timestamp = DateTime.UtcNow.ToString("o");
+            var timestamp = DateTime.UtcNow.ToString("o");
+            var config = Config.GetConfig();
 
-            Config config = Config.GetConfig();
+            var userRepository = new Repository<User>(config.ConnectionUrl);
+            var profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
+            var uaHelper = UserAgentParser.Parse(userAgent);
 
-            Repository<User> userRepository = new Repository<User>(config.ConnectionUrl);
-            Repository<Profiles> profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
+            var userTask = userRepository.FindByAccountIdAsync(accountId);
+            var profileTask = profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
 
-            var user = await userRepository.FindByAccountIdAsync(accountId);
+            await Task.WhenAll(userTask, profileTask);
+
+            var user = userTask.Result;
+            var profile = profileTask.Result;
 
             if (user == null)
             {
                 return new BaseResponse();
             }
 
-
-            var uahelper = UserAgentParser.Parse(userAgent);
-
-
             List<object> applyProfileChanges = new List<object>();
 
-
-            var profile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, user.AccountId);
-            if (profile == null && profileId == "common_public") {
+            if (profile == null && profileId == "common_public")
+            {
                 var profileChanges = new List<object>
                 {
                     new
@@ -50,8 +51,8 @@ namespace Larry.Source.Controllers.Profile.Operations
                         changeType = "fullProfileUpdate",
                         profile = new MCPProfile
                         {
-                            created = DateTime.UtcNow.ToString("o"),
-                            updated = DateTime.UtcNow.ToString("o"),
+                            created = timestamp,
+                            updated = timestamp,
                             rvn = 0,
                             wipeNumber = 1,
                             accountId = accountId,
@@ -75,43 +76,32 @@ namespace Larry.Source.Controllers.Profile.Operations
             if (profile.ProfileId == "athena")
             {
                 var itemsRepository = new Repository<Items>(config.ConnectionUrl);
+                var itemsTask = itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
 
-                try
-                {
-                    var items = await itemsRepository.GetAllItemsByAccountIdAsync(accountId, profileId);
+                var items = await itemsTask;
 
-                    foreach (var item in items)
-                    {
-                        if (item.IsStat && item.TemplateId == "season_num")
-                        {
-                            try
-                            {
-                                var deserializedValue = JsonConvert.DeserializeObject<dynamic>(item.Value) ?? new JObject();
+                var itemProcessingTasks = items.Where(item => item.IsStat && item.TemplateId == "season_num")
+                                               .Select(async item =>
+                                               {
+                                                   try
+                                                   {
+                                                       var deserializedValue = JsonSerializer.Deserialize<dynamic>(item.Value) ?? new JObject();
+                                                       deserializedValue = uaHelper.Season.ToString();
+                                                       item.Value = JsonSerializer.Serialize(deserializedValue);
 
-                                deserializedValue = uahelper.Season.ToString();
+                                                       await itemsRepository.UpdateAsync(item);
+                                                       Logger.Information($"Updated season for item: {item.TemplateId}, New Value: {item.Value}");
+                                                   }
+                                                   catch (Exception ex)
+                                                   {
+                                                       Logger.Error($"Error updating item (TemplateId: {item.TemplateId}): {ex.Message}");
+                                                   }
+                                               }).ToArray();
 
-                                item.Value = JsonConvert.SerializeObject(deserializedValue);
-
-                                await itemsRepository.UpdateAsync(item);
-                                Logger.Information($"Updated season for item: {item.TemplateId}, New Value: {item.Value}");
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.Error($"Error updating item (TemplateId: {item.TemplateId}): {ex.Message}");
-                            }
-                        }
-                    }
-
-                    // TODO: Add PastSeasons
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Failed to get items: {ex.Message}");
-                }
+                await Task.WhenAll(itemProcessingTasks);
             }
             else if (profile.ProfileId == "common_core")
             {
-
             }
             else if (profileId == "common_public")
             {
@@ -122,8 +112,8 @@ namespace Larry.Source.Controllers.Profile.Operations
                         changeType = "fullProfileUpdate",
                         profile = new MCPProfile
                         {
-                            created = DateTime.UtcNow.ToString("o"),
-                            updated = DateTime.UtcNow.ToString("o"),
+                            created = timestamp,
+                            updated = timestamp,
                             rvn = 0,
                             wipeNumber = 1,
                             accountId = accountId,
@@ -144,7 +134,8 @@ namespace Larry.Source.Controllers.Profile.Operations
                 }, profileChanges, profileId);
             }
 
-            var profileData = await ProfileManager.GetProfileAsync(user.AccountId, profileId);
+            var profileDataTask = ProfileManager.GetProfileAsync(user.AccountId, profileId);
+            var profileData = await profileDataTask;
 
             applyProfileChanges.Add(new
             {

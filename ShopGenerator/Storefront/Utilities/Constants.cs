@@ -22,6 +22,19 @@ namespace ShopGenerator.Storefront.Utilities
             "AthenaToy"
         };
 
+        public static readonly List<MetaInfo> DefaultMetaInfo = new()
+        {
+            new() { Key = "TileSize", Value = "Normal" },
+            new() { Key = "SectionId", Value = "Featured" }
+        };
+
+        public static Requirement DefaultRequirements(string type, string id) => new()
+        {
+           RequirementType = "DenyOnItemOwnership",
+           RequiredId = $"{type}:{id}",
+           MinQuantity = 1
+        };
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Storefronts"/> class with the specified section name.
         /// </summary>
@@ -45,5 +58,7 @@ namespace ShopGenerator.Storefront.Utilities
         {
             shop.Storefronts.Add(changes);
         }
+
+
     }
 }

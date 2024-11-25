@@ -11,9 +11,26 @@ namespace ShopGenerator.Storefront.Models
     {
         [JsonPropertyName("currencyType")]
         public string CurrencyType { get; set; }
+
+        [JsonPropertyName("currencySubType")]
+        public string CurrencySubType { get; set; }
+
         [JsonPropertyName("regularPrice")]
-        public int RegularPrice { get; set; }
+        public decimal RegularPrice { get; set; }
+
+        [JsonPropertyName("dynamicRegularPrice")]
+        public decimal? DynamicRegularPrice { get; set; }
+
         [JsonPropertyName("finalPrice")]
-        public int FinalPrice { get; set; }
+        public decimal FinalPrice { get; set; }
+
+        [JsonPropertyName("saleType")]
+        public string? SaleType { get; set; }
+
+        [JsonPropertyName("saleExpiration")]
+        public string SaleExpiration { get; set; }
+
+        [JsonPropertyName("basePrice")]
+        public decimal BasePrice { get; set; }
     }
 }

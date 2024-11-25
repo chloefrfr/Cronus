@@ -11,7 +11,7 @@ namespace ShopGenerator.Storefront.Services
     public class ShopGenerator : IShopGenerator
     {
         private readonly IAPIService _apiService;
-
+        public readonly Shop shop;
 
         public ShopGenerator(IAPIService apiService)
         {
@@ -19,6 +19,12 @@ namespace ShopGenerator.Storefront.Services
             Constants._items = new Dictionary<string, JSONResponse>();
             Constants._sets = new Dictionary<string, StoreSet>();
             Constants._cosmeticTypes = new Dictionary<string, CosmeticTypes>();
+            shop = new Shop()
+            {
+                RefreshIntervalHrs = 24,
+                DailyPurchaseHrs = 24,
+                Storefronts = new List<Storefronts>(),
+            };
         }
 
 
@@ -54,6 +60,9 @@ namespace ShopGenerator.Storefront.Services
 
             await generation.FillDailyStorefront(dailySection);
             await generation.FillWeeklyStorefront(weeklySection);
+
+            Constants.PushChanges(shop, dailySection);
+            Constants.PushChanges(shop, weeklySection);
         }
 
         /// <summary>

@@ -10,6 +10,8 @@ using Larry.Source.Utilities.Managers;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
 using System.Reactive;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace Larry.Source.Controllers.Profile
 {
@@ -20,45 +22,33 @@ namespace Larry.Source.Controllers.Profile
         [HttpPost("{accountId}/client/{operation}")]
         public async Task<IActionResult> ProfileHandler(string accountId, string operation)
         {
-            Logger.Information($"Operation => {operation}");
             string timestamp = DateTime.UtcNow.ToString("o");
             string profileId = Request.Query["profileId"];
             int rvn = int.Parse(Request.Query["rvn"]);
+            var userAgent = Request.Headers["User-Agent"].ToString();
 
-            var UserAgent = Request.Headers["User-Agent"];
-            
-            if (operation == null)
-            {
+            if (string.IsNullOrEmpty(operation))
                 return BadRequest(Errors.CreateError(400, Request.Path, "Missing parameter 'operation'.", timestamp));
-            }
-
-            if (accountId == null || rvn == null || profileId == null)
-            {
+            if (string.IsNullOrEmpty(accountId) || string.IsNullOrEmpty(profileId))
                 return BadRequest(Errors.CreateError(400, Request.Path, "Missing query parameters.", timestamp));
-            }
+            if (string.IsNullOrEmpty(userAgent))
+                return BadRequest(Errors.CreateError(400, Request.Path, "Missing header 'User-Agent'.", timestamp));
 
-            if (UserAgent.ToString() == null)
-            {
-                return BadRequest(Errors.CreateError(400, Request.Path, "Missing heaer 'User-Agent'.", timestamp));
-            }
+            var config = Config.GetConfig();
+            var userRepository = new Repository<User>(config.ConnectionUrl);
+            var profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
 
-            Config config = Config.GetConfig();
+            var userTask = userRepository.FindByAccountIdAsync(accountId);
+            var profileTask = profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, accountId);
+            await Task.WhenAll(userTask, profileTask);
 
-            Repository<User> userRepository = new Repository<User>(config.ConnectionUrl);
-            Repository<Profiles> profilesRepository = new Repository<Profiles>(config.ConnectionUrl);
-
-
-            var user = await userRepository.FindByAccountIdAsync(accountId);
+            var user = userTask.Result;
+            var profile = profileTask.Result;
 
             if (user == null)
-            {
                 return NotFound(Errors.CreateError(404, Request.Path, "Failed to find user.", timestamp));
-            }
 
-            var profile = await profilesRepository.FindByProfileIdAndAccountIdAsync(profileId, user.AccountId);
-
-
-            if (profile == null && profileId == "common_public")
+            if (profile == null && (profileId == "common_public" || profileId == "creative"))
             {
                 var profileChanges = new List<object>
                 {
@@ -67,12 +57,12 @@ namespace Larry.Source.Controllers.Profile
                         changeType = "fullProfileUpdate",
                         profile = new MCPProfile
                         {
-                            created = DateTime.UtcNow.ToString("o"),
-                            updated = DateTime.UtcNow.ToString("o"),
+                            created = timestamp,
+                            updated = timestamp,
                             rvn = 0,
                             wipeNumber = 1,
                             accountId = accountId,
-                            profileId = "common_public",
+                            profileId = profileId,
                             version = "no_version",
                             stats = new StatsAttributes(),
                             items = new Dictionary<string, Classes.MCP.ItemDefinition>(),
@@ -84,40 +74,10 @@ namespace Larry.Source.Controllers.Profile
                 return Ok(MCPResponses.Generate(new Profiles
                 {
                     AccountId = accountId,
-                    ProfileId = "common_public",
-                    Revision = 0
-                }, profileChanges, profileId));
-            } else if (profile == null && profileId == "creative")
-            {
-                var profileChanges = new List<object>
-                {
-                    new
-                    {
-                        changeType = "fullProfileUpdate",
-                        profile = new MCPProfile
-                        {
-                            created = DateTime.UtcNow.ToString("o"),
-                            updated = DateTime.UtcNow.ToString("o"),
-                            rvn = 0,
-                            wipeNumber = 1,
-                            accountId = accountId,
-                            profileId = "common_public",
-                            version = "no_version",
-                            stats = new StatsAttributes(),
-                            items = new Dictionary<string, Classes.MCP.ItemDefinition>(),
-                            commandRevision = 0
-                        }
-                    }
-                };
-
-                return Ok(MCPResponses.Generate(new Profiles
-                {
-                    AccountId = accountId,
-                    ProfileId = "creative",
+                    ProfileId = profileId,
                     Revision = 0
                 }, profileChanges, profileId));
             }
-
 
             if (profile == null)
             {
@@ -129,7 +89,7 @@ namespace Larry.Source.Controllers.Profile
 
             var operations = new Dictionary<string, Func<Task<IActionResult>>>
             {
-                { "QueryProfile", async () => Ok(await QueryProfile.Init(user.AccountId, profileId, Request.Headers["User-Agent"])) },
+                { "QueryProfile", async () => Ok(await QueryProfile.Init(user.AccountId, profileId, userAgent)) },
 
                 { "EquipBattleRoyaleCustomization", async () =>
                     await HandleRequestBody<EquipRequestBody>(body =>
@@ -150,19 +110,21 @@ namespace Larry.Source.Controllers.Profile
             }
 
             Logger.Warning($"Missing operation: {operation}");
-            var response = MCPResponses.Generate(profile, applyProfileChanges, profileId);
-            return Ok(response);
+            if (operation == "ClientQuestLogin")
+                return Ok(MCPResponses.Generate(profile, applyProfileChanges, profileId));
+            return NotFound(Errors.CreateError(404, Request.Path, $"Operation '{operation}' not found.", timestamp));
         }
 
-        async Task<IActionResult> HandleRequestBody<T>(Func<T, Task<BaseResponse>> action)
+        private async Task<IActionResult> HandleRequestBody<T>(Func<T, Task<BaseResponse>> action)
         {
             var body = await Request.ReadFromJsonAsync<T>();
-            var timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("o");
+
             if (body == null)
-            {
                 return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));
-            }
-            return Ok(await action(body));
+
+            var response = await action(body);
+            return Ok(response);
         }
     }
 }

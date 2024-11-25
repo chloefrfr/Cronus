@@ -1,0 +1,17 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ShopGenerator.Storefront.Enums
+{
+    public enum Sections
+    {
+        [Description("Daily")]
+        Daily,
+        [Description("Featured")]
+        Featured // Weekly
+    }
+}
