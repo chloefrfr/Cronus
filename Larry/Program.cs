@@ -97,6 +97,12 @@ namespace Larry
                 var botTask = bot.RunAsync(config.Token);
                 var webAppTask = app.RunAsync();
 
+                if (config.GenerateShopImmediately)
+                {
+                    Logger.Information("Generating shop immediately.");
+                    await _shopGenerator.GenerateShopAsync();
+                }
+
                 await Task.WhenAll(botTask, webAppTask);
             }
             catch (Exception ex)

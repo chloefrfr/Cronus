@@ -63,6 +63,8 @@ namespace ShopGenerator.Storefront.Services
 
             Constants.PushChanges(shop, dailySection);
             Constants.PushChanges(shop, weeklySection);
+
+            Logger.Information("Successfully generated shop.");
         }
 
         /// <summary>

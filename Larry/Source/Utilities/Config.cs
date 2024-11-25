@@ -11,6 +11,7 @@ namespace Larry.Source.Utilities
         public string ClientSecret { get; set; }
         public string GameDirectory { get; set; }
         public string CurrentVersion { get; set; }
+        public bool GenerateShopImmediately { get; set; }
 
         public static Config Load()
         {
