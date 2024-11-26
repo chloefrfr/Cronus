@@ -17,7 +17,7 @@ namespace Larry
     class Program
     {
         public static FileProviderManager _fileProviderManager;
-        private static ShopGenerator.Storefront.Services.ShopGenerator _shopGenerator;
+        public static ShopGenerator.Storefront.Services.ShopGenerator _shopGenerator;
 
         static async Task Main(string[] args)
         {

@@ -1,4 +1,5 @@
 ﻿using ShopGenerator.Storefront.Enums;
+using ShopGenerator.Storefront.Generation.Sets;
 using ShopGenerator.Storefront.Models;
 using ShopGenerator.Storefront.Utilities;
 using System;
@@ -100,9 +101,45 @@ namespace ShopGenerator.Storefront.Generation
             }
         }
 
+        /// <summary>
+        /// Fills the weekly storefront with a selection of random sets.
+        /// </summary>
+        /// <param name="weeklySection">The storefront section to be filled with sets.</param>
         public async Task FillWeeklyStorefront(Storefronts weeklySection)
         {
+            Config config = Config.GetConfig();
+            var version = int.Parse(config.CurrentVersion.Split(".")[0]);
+            int minimumWeeklyItems = CalculateMinimumWeeklyItems(version);
 
+            if (Constants._sets.Count == 0)
+            {
+                throw new InvalidOperationException("No stored sets available.");
+            }
+
+            Logger.Information($"Minimum items for version {version}: {minimumWeeklyItems}");
+
+            while (GetRandomFullSetLength.Get(weeklySection.CatalogEntries) < minimumWeeklyItems)
+            {
+                var randomSet = GetRandomSet.Get();
+                
+                foreach (var item in randomSet.Definition)
+                {
+                    var entry = ShopEntry.New(item, Sections.Featured);
+                    if (entry != null)
+                    {
+                        weeklySection.CatalogEntries.Add(entry);
+                    }
+                }
+            }
+        }
+
+        private static int CalculateMinimumWeeklyItems(int version)
+        {
+            if (version >= 1 && version <= 8)
+                return 2;
+            if (version >= 9 && version <= 13)
+                return 3;
+            return 5;
         }
     }
 }

@@ -130,7 +130,7 @@ namespace ShopGenerator.Storefront.Services
         {
             Config config = Config.GetConfig();
             return item.Introduction != null &&
-                item.Introduction.BackendValue <= int.Parse(config.CurrentVersion.Split(".")[0]) &&
+                item.Introduction.BackendValue < int.Parse(config.CurrentVersion.Split(".")[0]) &&
                 item.ShopHistory != null && item.ShopHistory.Count > 0;
         }
 

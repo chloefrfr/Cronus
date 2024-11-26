@@ -23,5 +23,11 @@ namespace Larry.Source.Controllers.Storefront
             var json = System.IO.File.ReadAllText(keychainFile);
             return Content(json);
         }
+
+        [HttpGet("catalog")]
+        public IActionResult GetCatalog()
+        {
+            return Ok(Program._shopGenerator.shop);
+        }
     }
 }
