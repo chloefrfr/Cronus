@@ -234,23 +234,16 @@ namespace Larry.Source.Utilities.Managers
         /// <returns>A new instance of <see cref="Items"/>.</returns>
         private static Items CreateCCItem(string profileId, string accountId, string templateId)
         {
-            var itemValue = new ItemValue();
-
-            if (templateId == "Currency:MtxPurchased")
-            {
-                itemValue.platform = "EpicPC";
-            }
-            else
-            {
-                itemValue.level = 1;
-            }
-
             return new Items
             {
                 AccountId = accountId,
                 ProfileId = profileId,
                 TemplateId = templateId,
-                Value = System.Text.Json.JsonSerializer.Serialize(itemValue),
+                Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
+                {
+                    platform = "EpicPC",
+                    level = 1,
+                }),
                 Quantity = templateId == "Currency:MtxPurchased" ? 0 : 1,
                 IsStat = false
             };
@@ -307,6 +300,12 @@ namespace Larry.Source.Utilities.Managers
                         break;
                     case "xp":
                         relevantAttributesDict["xp"] = (int)propertyValue;
+                        break;
+                    case "level":
+                        relevantAttributesDict["level"] = (int)propertyValue;
+                        break;
+                    case "use_count":
+                        relevantAttributesDict["use_count"] = (int)propertyValue;
                         break;
                     case "variants":
                         relevantAttributesDict["variants"] = (List<Variants>)propertyValue;
@@ -487,7 +486,6 @@ namespace Larry.Source.Utilities.Managers
 
             try
             {
-                // Cache configuration and reuse repositories
                 Config config = Config.GetConfig();
                 var connectionUrl = config.ConnectionUrl;
 
