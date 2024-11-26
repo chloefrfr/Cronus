@@ -311,6 +311,16 @@ RETURNING id;";
             return await FindByColumnAsync("templateid", templateId);
         }
 
+        /// <summary>
+        /// Finds an item entity by its lockerName asynchronously.
+        /// </summary>
+        /// <param name="templateId">The lockerName of the item.</param>
+        /// <returns>The item instance if found; otherwise, null.</returns>
+        public async Task<TEntity> FindByLockerNameAsync(string templateId)
+        {
+            EnsureIsCorrectEntity();
+            return await FindByColumnAsync("lockername", templateId);
+        }
 
         /// <summary>
         /// Deletes a Tokens entity by account ID and type asynchronously.
@@ -403,7 +413,8 @@ RETURNING id;";
         {
             if (typeof(TEntity) != typeof(User) &&
                 typeof(TEntity) != typeof(Profiles) &&
-                typeof(TEntity) != typeof(Items))
+                typeof(TEntity) != typeof(Items) &&
+                typeof(TEntity) != typeof(Loadouts))
             {
                 throw new InvalidOperationException("This method is only available for User, Profiles, Items entities.");
             }

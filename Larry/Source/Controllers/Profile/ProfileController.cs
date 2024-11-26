@@ -94,6 +94,9 @@ namespace Larry.Source.Controllers.Profile
                 { "EquipBattleRoyaleCustomization", async () =>
                     await HandleRequestBody<EquipRequestBody>(body =>
                         EquipBattleRoyaleCustomization.Init(user.AccountId, profileId, body).AsTask()) },
+                { "SetCosmeticLockerSlot", async () =>
+                    await HandleRequestBody<SetLockerSlotRequestBody>(body =>
+                        SetCosmeticLockerSlot.Init(user.AccountId, profileId, body).AsTask()) },
 
                 { "MarkItemSeen", async () =>
                     await HandleRequestBody<MITSRequestBody>(body =>
