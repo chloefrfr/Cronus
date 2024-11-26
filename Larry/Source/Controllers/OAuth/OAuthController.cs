@@ -18,7 +18,7 @@ namespace Larry.Source.Controllers.OAuth
         public async Task<IActionResult> AuthToken()
         {
             var tokenHeader = Request.Headers["Authorization"].ToString();
-            var timestamp = DateTime.UtcNow.ToString("o"); 
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"); 
             var userAgent = Request.Headers["User-Agent"].ToString();
 
             if (string.IsNullOrEmpty(tokenHeader))
@@ -197,7 +197,7 @@ namespace Larry.Source.Controllers.OAuth
         public async Task<IActionResult> VerifyToken()
         {
             string authorizationHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             if (string.IsNullOrEmpty(authorizationHeader))
             {

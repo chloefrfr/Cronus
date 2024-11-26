@@ -22,7 +22,7 @@ namespace Larry.Source.Controllers.Profile
         [HttpPost("{accountId}/client/{operation}")]
         public async Task<IActionResult> ProfileHandler(string accountId, string operation)
         {
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
             string profileId = Request.Query["profileId"];
             int rvn = int.Parse(Request.Query["rvn"]);
             var userAgent = Request.Headers["User-Agent"].ToString();
@@ -118,7 +118,7 @@ namespace Larry.Source.Controllers.Profile
         private async Task<IActionResult> HandleRequestBody<T>(Func<T, Task<BaseResponse>> action)
         {
             var body = await Request.ReadFromJsonAsync<T>();
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             if (body == null)
                 return BadRequest(Errors.CreateError(400, Request.Path, "Invalid body.", timestamp));

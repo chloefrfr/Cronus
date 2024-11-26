@@ -28,12 +28,18 @@ namespace ShopGenerator.Storefront.Generation
 
             var entry = CreateBaseEntry(item, section, 0);
 
-            
+            void AddMetaInfo(string key, string value)
+            {
+                if (!entry.MetaInfo.Any(meta => meta.Key == key))
+                {
+                    entry.MetaInfo.Add(new() { Key = key, Value = value });
+                }
+            }
 
-            entry.MetaInfo.Add(new() { Key = "DisplayAssetPath", Value = entry.DisplayAssetPath });
-            entry.MetaInfo.Add(new() { Key = "NewDisplayAssetPath", Value = entry.NewDisplayAssetPath });
-            entry.MetaInfo.Add(new() { Key = "TileSize", Value = section == Sections.Featured ? "Normal" : "Small" });
-            entry.MetaInfo.Add(new() { Key = "SectionId", Value = section.GetDescription() });
+            AddMetaInfo("DisplayAssetPath", entry.DisplayAssetPath);
+            AddMetaInfo("NewDisplayAssetPath", entry.NewDisplayAssetPath);
+            AddMetaInfo("TileSize", section == Sections.Featured ? "Normal" : "Small");
+            AddMetaInfo("SectionId", section.GetDescription());
 
             if (item.Backpack != null)
             {
@@ -42,10 +48,10 @@ namespace ShopGenerator.Storefront.Generation
             }
 
             entry.GiftInfo.PurchaseRequirements = entry.Requirements;
-            
 
             return entry;
         }
+
 
         /// <summary>
         /// Creates a base entry with default properties.
@@ -73,10 +79,7 @@ namespace ShopGenerator.Storefront.Generation
                         CurrencySubType = "Currency",
                         RegularPrice = price,
                         DynamicRegularPrice = -1,
-                        FinalPrice = price,
-                        SaleType = "Regular",
-                        SaleExpiration = DateTime.MaxValue.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                        BasePrice = price
+                        FinalPrice = price
                     }
                 },
                 GiftInfo = new GiftInfo
@@ -88,13 +91,18 @@ namespace ShopGenerator.Storefront.Generation
                 },
                 DisplayAssetPath = string.IsNullOrWhiteSpace(item.DisplayAssetPath) ? ItemUtils.SetNewDisplayAssetPath($"DA_Daily_{item.Id}") : item.DisplayAssetPath,
                 NewDisplayAssetPath = string.IsNullOrWhiteSpace(item.NewDisplayAssetPath) ? string.Empty : item.NewDisplayAssetPath,
-                Meta = new Meta
-                {
-                    SectionId = section.GetDescription(),
-                    TileSize = section == Sections.Featured ? "Normal" : "Small",
-                    DisplayAssetPath = string.Empty,
-                    NewDisplayAssetPath = string.Empty
-                }
+                Refundable = true,
+                BannerOverride = "",
+                Title = "",
+                Description = "",
+                ShortDescription = "",
+                AppStoreId = new List<string>(),
+                FulfillmentIds = new List<object>(),
+                DailyLimit = -1,
+                WeeklyLimit = -1,
+                SortPriority = 0,
+                CatalogGroupPriority = 0,
+                FilterWeight = 0
             };
         }
     }

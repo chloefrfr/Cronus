@@ -13,7 +13,7 @@ namespace Larry.Source.Controllers.Builds
         {
             Response.ContentType = "application/octet-stream";
             var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Memory", "Assets", file);
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             Logger.Information($"Path to file {filePath}");
 
@@ -35,7 +35,7 @@ namespace Larry.Source.Controllers.Builds
         {
             Response.ContentType = "application/octet-stream";
             var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Memory", "Assets", file);
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             Logger.Information($"Path to file {filePath}");
 

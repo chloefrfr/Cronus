@@ -8,8 +8,8 @@
         public string seasonTemplateId { get; set; }
         public int matchXpBonusPoints { get; set; }
         public string seasonBegin { get; set; }
-        public DateTime seasonEnd { get; set; }
-        public DateTime seasonDisplayedEnd { get; set; }
+        public string seasonEnd { get; set; }
+        public string seasonDisplayedEnd { get; set; }
         public string weeklyStoreEnd { get; set; }
         public string stwEventStoreEnd { get; set; }
         public string stwWeeklyStoreEnd { get; set; }

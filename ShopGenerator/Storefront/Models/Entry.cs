@@ -27,9 +27,6 @@ namespace ShopGenerator.Storefront.Models
         [JsonPropertyName("metaInfo")]
         public List<MetaInfo> MetaInfo { get; set; }
 
-        [JsonPropertyName("meta")]
-        public Meta Meta { get; set; }
-
         [JsonPropertyName("giftInfo")]
         public GiftInfo GiftInfo { get; set; }
 
@@ -42,7 +39,7 @@ namespace ShopGenerator.Storefront.Models
         [JsonPropertyName("displayAssetPath")]
         public string DisplayAssetPath { get; set; }
 
-        [JsonPropertyName("NewDisplayAssetPath")]
+        [JsonPropertyName("newDisplayAssetPath")]
         public string NewDisplayAssetPath { get; set; }
 
         [JsonPropertyName("refundable")]

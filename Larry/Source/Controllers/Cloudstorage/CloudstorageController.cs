@@ -27,7 +27,7 @@ namespace Larry.Source.Controllers.Cloudstorage
         public async Task<IActionResult> GetCloudStorageFilesAsync()
         {
             var userAgent = Request.Headers["User-Agent"].ToString();
-            var timestamp = DateTime.UtcNow.ToString("o");
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             var seasonData = UserAgentParser.Parse(userAgent);
             if (seasonData == null)
@@ -66,7 +66,7 @@ namespace Larry.Source.Controllers.Cloudstorage
         [HttpGet("system/{filename}")]
         public async Task<IActionResult> GetFileByNameAsync(string filename)
         {
-            var timestamp = DateTime.UtcNow.ToString("o");
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             var userAgent = Request.Headers["User-Agent"].ToString();
             var seasonData = UserAgentParser.Parse(userAgent);
@@ -98,7 +98,7 @@ namespace Larry.Source.Controllers.Cloudstorage
         public async Task<IActionResult> GetClientSettingsFile(string accountId, string file)
         {
             string clientSettingsFile = Path.Combine(_clientSettingsPath, $"ClientSettings-{accountId}.Sav");
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             if (file != "ClientSettings.Sav" || !System.IO.File.Exists(clientSettingsFile))
             {
@@ -121,7 +121,7 @@ namespace Larry.Source.Controllers.Cloudstorage
         public async Task<IActionResult> GetClientSettingsMetadata(string accountId)
         {
             string clientSettingsFile = Path.Combine(_clientSettingsPath, $"ClientSettings-{accountId}.Sav");
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             if (System.IO.File.Exists(clientSettingsFile))
             {
@@ -165,7 +165,7 @@ namespace Larry.Source.Controllers.Cloudstorage
         [Route("user/{accountId}/{file}")]
         public async Task<IActionResult> UploadClientSettingsFile(string accountId, string file)
         {
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             try
             {

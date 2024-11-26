@@ -20,7 +20,7 @@ namespace Larry.Source.Controllers.Profile.Operations
     {
         public static async Task<BaseResponse> Init(string accountId, string profileId, string userAgent)
         {
-            var timestamp = DateTime.UtcNow.ToString("o");
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
             var config = Config.GetConfig();
 
             var userRepository = new Repository<User>(config.ConnectionUrl);

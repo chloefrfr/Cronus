@@ -18,7 +18,7 @@ namespace Larry.Source.Controllers.Account
             var userRepository = new Repository<User>(config.ConnectionUrl);
 
             var user = await userRepository.FindByAccountIdAsync(accountId);
-            var timestamp = DateTime.UtcNow.ToString("o");
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             if (user == null)
             {
@@ -58,7 +58,7 @@ namespace Larry.Source.Controllers.Account
         {
             Response.ContentType = "application/json";
             string accountIdQuery = Request.Query["accountId"];
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             if (accountIdQuery == null)
             {
@@ -115,7 +115,7 @@ namespace Larry.Source.Controllers.Account
         public async Task<IActionResult> FindByDisplayName(string username)
         {
             Response.ContentType = "application/json";
-            var timestamp = DateTime.UtcNow.ToString("o");
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             Config config = Config.GetConfig();
             var userRepository = new Repository<User>(config.ConnectionUrl);

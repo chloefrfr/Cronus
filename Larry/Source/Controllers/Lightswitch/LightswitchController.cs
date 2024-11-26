@@ -23,7 +23,7 @@ namespace Larry.Source.Controllers.Lightswitch
         public async Task<IActionResult> BulkStatus()
         {
             string authorization = Request.Headers["Authorization"].ToString()?.Replace("bearer eg1~", "");
-            string timestamp = DateTime.UtcNow.ToString("o");
+            string timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
             if (string.IsNullOrEmpty(authorization))
             {

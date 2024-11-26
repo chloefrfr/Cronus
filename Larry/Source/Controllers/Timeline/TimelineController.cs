@@ -13,11 +13,11 @@ namespace Larry.Source.Controllers.Timeline
         [HttpGet("timeline")]
         public async Task<IActionResult> GetCalendar()
         {
-            var timestamp = DateTime.UtcNow.ToString("o");
+            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
             var useragent = Request.Headers["User-Agent"].ToString();
-            string nextDay = DateTime.UtcNow.Date.AddDays(1).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+            string nextDayMidnight = DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-ddT00:00:00.000Z");
 
-            if (useragent == null)
+            if (string.IsNullOrEmpty(useragent))
             {
                 return BadRequest(Errors.CreateError(400, Request.Path, "Missing header 'User-Agent'.", timestamp));
             }
@@ -35,7 +35,7 @@ namespace Larry.Source.Controllers.Timeline
                 clientMatchmaking = new ClientMatchmaking
                 {
                     states = new List<object>(),
-                    cacheExpire = nextDay
+                    cacheExpire = nextDayMidnight
                 },
                 communityVotes = new CommunityVotes
                 {
@@ -49,7 +49,7 @@ namespace Larry.Source.Controllers.Timeline
                             {
                                 electionId = string.Empty,
                                 candidates = new List<string>(),
-                                electionEnds = nextDay,
+                                electionEnds = nextDayMidnight,
                                 numWinners = 1,
                                 wipeNumber = 1,
                                 winnerStateHours = 1,
@@ -57,7 +57,7 @@ namespace Larry.Source.Controllers.Timeline
                             }
                         }
                     },
-                    cacheExpire = nextDay
+                    cacheExpire = nextDayMidnight
                 },
                 clientEvents = new ClientEvents
                 {
@@ -65,7 +65,7 @@ namespace Larry.Source.Controllers.Timeline
                     {
                         new EventState
                         {
-                            validFrom = DateTime.Parse("0001-01-01T00:00:00.000Z"),
+                            validFrom = DateTime.MinValue.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                             activeEvents = activeEvents,
                             state = new EventInfo
                             {
@@ -74,18 +74,18 @@ namespace Larry.Source.Controllers.Timeline
                                 seasonNumber = uahelper.Season,
                                 seasonTemplateId = $"AthenaSeason:athenaseason{uahelper.Season}",
                                 matchXpBonusPoints = 0,
-                                seasonBegin = DateTime.MinValue.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                                seasonEnd = DateTime.Parse("9999-01-01T00:00:00Z"),
-                                seasonDisplayedEnd = DateTime.Parse("9999-01-01T00:00:00Z"),
-                                weeklyStoreEnd = nextDay,
-                                stwEventStoreEnd = nextDay,
-                                stwWeeklyStoreEnd = nextDay,
+                                seasonBegin = DateTime.Parse("2020-01-01T00:00:00.000Z").ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                                seasonEnd = DateTime.Parse("9999-01-01T00:00:00.000Z").ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                                seasonDisplayedEnd = DateTime.Parse("9999-01-01T00:00:00.000Z").ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                                weeklyStoreEnd = nextDayMidnight,
+                                stwEventStoreEnd = nextDayMidnight,
+                                stwWeeklyStoreEnd = nextDayMidnight,
                                 sectionStoreEnds = new Dictionary<string, DateTime>(),
-                                dailyStoreEnd = nextDay
+                                dailyStoreEnd = nextDayMidnight
                             }
                         }
                     },
-                    cacheExpire = nextDay
+                    cacheExpire = nextDayMidnight
                 }
             };
 
@@ -94,7 +94,7 @@ namespace Larry.Source.Controllers.Timeline
                 channels,
                 eventsTimeOffsetHrs = 0,
                 cacheIntervalMins = 10,
-                currentTime = DateTime.MinValue.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                currentTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
             };
 
             return Ok(response);

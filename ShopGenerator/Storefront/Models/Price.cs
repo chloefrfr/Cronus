@@ -23,14 +23,5 @@ namespace ShopGenerator.Storefront.Models
 
         [JsonPropertyName("finalPrice")]
         public decimal FinalPrice { get; set; }
-
-        [JsonPropertyName("saleType")]
-        public string? SaleType { get; set; }
-
-        [JsonPropertyName("saleExpiration")]
-        public string SaleExpiration { get; set; }
-
-        [JsonPropertyName("basePrice")]
-        public decimal BasePrice { get; set; }
     }
 }

@@ -5,7 +5,7 @@ namespace ShopGenerator.Storefront.Models
     public class Shop
     {
         [JsonPropertyName("expiration")]
-        public string Expiration => DateTime.UtcNow.AddHours(24).ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+        public string Expiration => DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-ddT00:00:00.000Z");
         [JsonPropertyName("refreshIntervalHrs")]
         public int RefreshIntervalHrs { get; set; } = 24;
         [JsonPropertyName("dailyPurchaseHrs")]

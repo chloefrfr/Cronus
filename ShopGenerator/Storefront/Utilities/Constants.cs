@@ -25,7 +25,8 @@ namespace ShopGenerator.Storefront.Utilities
         public static readonly List<MetaInfo> DefaultMetaInfo = new()
         {
             new() { Key = "TileSize", Value = "Normal" },
-            new() { Key = "SectionId", Value = "Featured" }
+            new() { Key = "SectionId", Value = "Featured" },
+            new() { Key = "BannerOverride", Value = "" }
         };
 
         public static Requirement DefaultRequirements(string type, string id) => new()
