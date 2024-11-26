@@ -198,6 +198,7 @@ namespace Larry.Source.Classes.Profiles
 
                 if (item.TemplateId == "CosmeticLocker:cosmeticlocker_athena") return;
 
+
                 var builtLoadout = LoadoutBuilder.Build(loadouts);
 
                 if (builtLoadout != null)

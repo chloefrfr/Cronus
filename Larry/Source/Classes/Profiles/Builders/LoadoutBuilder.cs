@@ -56,6 +56,10 @@ namespace Larry.Source.Classes.Profiles.Builders
                     {
                         items = new List<string> { string.Empty };
                     }
+                    else if (key == "Pickaxe")
+                    {
+                        items = new List<string> { "AthenaPickaxe:DefaultPickaxe" };
+                    }
                     else
                     {
                         items = loadouts
@@ -81,16 +85,16 @@ namespace Larry.Source.Classes.Profiles.Builders
                     templateId = loadout.TemplateId,
                     attributes = new ItemValue
                     {
+                        locker_slots_data = new LockerSlotData
+                        {
+                            slots = slotsResult
+                        },
                         use_count = 0,
                         banner_color_template = loadout.BannerColorId,
                         banner_icon_template = loadout.BannerId,
                         locker_name = loadout.LockerName,
-                        item_seen = true,
-                        favorite = false,
-                        locker_slots_data = new LockerSlotData
-                        {
-                            slots = slotsResult
-                        }
+                        item_seen = false,
+                        favorite = false
                     },
                     quantity = 1
                 };
