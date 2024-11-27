@@ -34,107 +34,69 @@ namespace Larry.Source.Discord.Commands
 
         public async Task BuildAsync(SocketSlashCommand command)
         {
-            await command.DeferAsync();
-
-            if (command == null)
-            {
-                var embed = new EmbedBuilder()
-                    .WithTitle("Command is null")
-                    .WithDescription("Command is null, please try again.")
-                    .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                    .WithCurrentTimestamp()
-                    .WithColor(Color.Red)
-                    .Build();
-
-                await command.FollowupAsync(embed: embed, ephemeral: true);
-                return;
-            }
-
-            var options = command.Data.Options;
-            var email = options.First().Value;
-            var password = options.Skip(1).FirstOrDefault()?.Value;
-
-            if (password == null || email == null)
-            {
-                var embed = new EmbedBuilder()
-                    .WithTitle("Password or Email is null")
-                    .WithDescription("Password or Email were received as 'null'.")
-                    .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                    .WithCurrentTimestamp()
-                    .WithColor(Color.Red)
-                    .Build();
-
-                await command.FollowupAsync(embed: embed, ephemeral: true);
-                return;
-            }
-
-            Regex emailRegex = new Regex(@"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$");
-
-            if (!emailRegex.IsMatch(email.ToString()))
-            {
-                var embed = new EmbedBuilder()
-                    .WithTitle("Invalid email")
-                    .WithDescription("The email you provided is invalid.")
-                    .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                    .WithCurrentTimestamp()
-                    .WithColor(Color.Red)
-                    .Build();
-
-                await command.FollowupAsync(embed: embed, ephemeral: true);
-                return;
-            }
-
-            var discordId = command.User.Id;
-
-            var config = Config.GetConfig();
-            var userRepository = new Repository<User>(config.ConnectionUrl);
-            var loadoutRepository = new Repository<Loadouts>(config.ConnectionUrl);
-
-            var user = await userRepository.FindByDiscordIdAsync(discordId.ToString());
-
-            if (user != null)
-            {
-                var embed = new EmbedBuilder()
-                    .WithTitle("Account already exists")
-                    .WithDescription("An account already exists for this user.")
-                    .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                    .WithCurrentTimestamp()
-                    .WithColor(Color.Red)
-                    .Build();
-
-                await command.FollowupAsync(embed: embed, ephemeral: true);
-                return;
-            }
-
-            
-
-            var (hashedPassword, salt) = PasswordHasher.HashPassword(password.ToString());
-            Guid guid = Guid.NewGuid();
-            var accountId = guid.ToString().Replace("-", "");
-
-
-
-            var member = command.User as IGuildUser;
-            string[] userRoles = Array.Empty<string>(); 
-            if (member != null)
-            {
-                userRoles = member.RoleIds
-                    .Select(roleId => member.Guild.GetRole(roleId)?.Name) 
-                    .Where(name => name != null) 
-                    .ToArray();
-            }
-
+            var embedBuilder = new EmbedBuilder()
+                .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
+                .WithCurrentTimestamp();
 
             try
             {
+                if (command == null)
+                {
+                    embedBuilder.WithTitle("Command is null")
+                                .WithDescription("Command is null, please try again.")
+                                .WithColor(Color.Red);
+                    await command.RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
+                    return;
+                }
+
+                var options = command.Data.Options;
+                var email = options.First().Value?.ToString();
+                var password = options.Skip(1).FirstOrDefault()?.Value?.ToString();
+
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+                {
+                    embedBuilder.WithTitle("Missing Parameters")
+                                .WithDescription("Both email and password are required.")
+                                .WithColor(Color.Red);
+                    await command.RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
+                    return;
+                }
+
+                Regex emailRegex = new Regex(@"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$");
+                if (!emailRegex.IsMatch(email))
+                {
+                    embedBuilder.WithTitle("Invalid email")
+                                .WithDescription("The email you provided is invalid.")
+                                .WithColor(Color.Red);
+                    await command.RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
+                    return;
+                }
+
+                var discordId = command.User.Id;
+                var config = Config.GetConfig();
+                var userRepository = new Repository<User>(config.ConnectionUrl);
+                var loadoutRepository = new Repository<Loadouts>(config.ConnectionUrl);
+                var user = await userRepository.FindByDiscordIdAsync(discordId.ToString());
+
+                if (user != null)
+                {
+                    embedBuilder.WithTitle("Account already exists")
+                                .WithDescription("An account already exists for this user.")
+                                .WithColor(Color.Red);
+                    await command.RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
+                    return;
+                }
+
+                var (hashedPassword, salt) = PasswordHasher.HashPassword(password);
+                var accountId = Guid.NewGuid().ToString().Replace("-", "");
                 var newUser = new User
                 {
-                    Email = email.ToString(),
+                    Email = email,
                     Username = command.User.Username,
                     Password = hashedPassword,
                     AccountId = accountId,
                     DiscordId = discordId.ToString(),
-                    Roles = userRoles,
+                    Roles = Array.Empty<string>(),
                     Banned = false,
                     HasAll = false
                 };
@@ -156,42 +118,31 @@ namespace Larry.Source.Discord.Commands
                     ContrailId = "",
                     LoadingScreenId = "",
                     MusicPackId = ""
-                };  
+                };
 
-                await userRepository.SaveAsync(newUser).ConfigureAwait(true);
-                await loadoutRepository.SaveAsync(newLoadout).ConfigureAwait(true);
+                await userRepository.SaveAsync(newUser);
+                await loadoutRepository.SaveAsync(newLoadout);
 
                 await ProfileManager.CreateProfileAsync("athena", newUser.AccountId);
                 await ProfileManager.CreateProfileAsync("common_core", newUser.AccountId);
-                //await ProfileManager.CreateProfileAsync("common_public", newUser.AccountId);
 
+                Logger.Information($"Successfully created user with username {newUser.Username} and accountId {newUser.AccountId}");
 
-                Logger.Information($"Successfully created user with the username {newUser.Username} and the accountId {newUser.AccountId}");
+                embedBuilder.WithTitle("Account Created Successfully")
+                            .WithDescription("Your account has been successfully created.")
+                            .WithColor(Color.Green)
+                            .AddField("Username", newUser.Username, true);
 
-                var embed = new EmbedBuilder()
-                    .WithTitle("Successfully created your account.")
-                    .WithDescription("Your account has been successfully created.")
-                    .WithColor(Color.Green)
-                    .WithCurrentTimestamp()
-                    .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                    .AddField("Username", newUser.Username, true)
-                    .Build();
-
-                await command.FollowupAsync(embed: embed, ephemeral: true);
-                return;
-            } catch (Exception ex)
+                await command.RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
+            }
+            catch (Exception ex)
             {
-                Logger.Error($"An error occured: {ex.Message}");
-                var embed = new EmbedBuilder()
-                    .WithTitle("An error occured")
-                    .WithDescription("An error occured while creating your account.")
-                    .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                    .WithCurrentTimestamp()
-                    .WithColor(Color.Red)
-                    .Build();
+                Logger.Error($"An error occurred: {ex.Message}");
+                embedBuilder.WithTitle("An error occurred")
+                            .WithDescription("An error occurred while creating your account.")
+                            .WithColor(Color.Red);
 
-                await command.FollowupAsync(embed: embed, ephemeral: true);
-                return;
+                await command.RespondAsync(embed: embedBuilder.Build(), ephemeral: true);
             }
         }
     }
