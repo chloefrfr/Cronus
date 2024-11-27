@@ -2,6 +2,7 @@
 using Larry.Source.Classes.Profile;
 using Larry.Source.Database.Entities;
 using Larry.Source.Utilities;
+using System.Text.Json;
 
 namespace Larry.Source.Classes.Profiles.Builders
 {
@@ -25,6 +26,28 @@ namespace Larry.Source.Classes.Profiles.Builders
             return databaseSlots.TryGetValue(slotName, out var databaseId) ? databaseId : null;
         }
 
+        private static List<string> GetItemsForSlot(string dbId, List<Loadouts> loadouts, int maxItems)
+        {
+            var items = loadouts
+                .Where(item => item.GetType().GetProperty(dbId)?.GetValue(item) != null)
+                .Select(item =>
+                {
+                    var value = item.GetType().GetProperty(dbId)?.GetValue(item);
+                    if (value is IEnumerable<object> collection)
+                    {
+                        return collection.Select(v => v?.ToString()).ToList();
+                    }
+                    return new List<string> { value?.ToString() };
+                })
+                .Where(value => value.Any(v => !string.IsNullOrEmpty(v)))
+                .Take(maxItems)
+                .SelectMany(value => value)
+                .Take(maxItems)
+                .ToList();
+
+            return items.Concat(Enumerable.Repeat<string>(null, maxItems - items.Count)).Take(maxItems).ToList();
+        }
+
         public static Dictionary<string, ItemDefinition> Build(List<Loadouts> loadouts)
         {
             var lockerLoadout = new Dictionary<string, ItemDefinition>();
@@ -35,30 +58,21 @@ namespace Larry.Source.Classes.Profiles.Builders
 
                 var slotsResult = slots.Aggregate(new Dictionary<string, LockerSlot>(), (acc, key) =>
                 {
-                    var dbId = LoadoutBuilder.GetDatabaseId(key);
-                    if (dbId == null)
+                    var dbId = GetDatabaseId(key);
+                    if (string.IsNullOrEmpty(dbId))
                     {
                         Logger.Error($"No database ID found for slot: {key}");
                         return acc;
                     }
 
                     List<string> items;
-
                     if (key == "Dance")
                     {
-                        items = Enumerable.Repeat(string.Empty, 6).ToList();
+                        items = GetItemsForSlot(dbId, loadouts, 6);
                     }
                     else if (key == "ItemWrap")
                     {
-                        items = Enumerable.Repeat(string.Empty, 7).ToList();
-                    }
-                    else if (key == "Backpack" || key == "LoadingScreen" || key == "SkyDiveContrail" || key == "MusicPack")
-                    {
-                        items = new List<string> { string.Empty };
-                    }
-                    else if (key == "Pickaxe")
-                    {
-                        items = new List<string> { "AthenaPickaxe:DefaultPickaxe" };
+                        items = GetItemsForSlot(dbId, loadouts, 7);
                     }
                     else
                     {
@@ -78,7 +92,6 @@ namespace Larry.Source.Classes.Profiles.Builders
                     acc[key] = newItemSlot;
                     return acc;
                 });
-
 
                 lockerLoadout[loadout.TemplateId] = new ItemDefinition
                 {

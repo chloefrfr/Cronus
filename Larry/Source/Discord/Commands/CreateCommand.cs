@@ -150,9 +150,9 @@ namespace Larry.Source.Discord.Commands
                     CharacterId = "AthenaCharacter:CID_001_Athena_Commando_F_Default",
                     BackpackId = "",
                     GliderId = "AthenaGlider:DefaultGlider",
-                    DanceId = "",
+                    DanceId = new string[6] { "", "", "", "", "", "" },
                     PickaxeId = "AthenaPickaxe:DefaultPickaxe",
-                    ItemWrapId = "",
+                    ItemWrapId = new string[7] { "", "", "", "", "", "", "" },
                     ContrailId = "",
                     LoadingScreenId = "",
                     MusicPackId = ""
@@ -166,7 +166,7 @@ namespace Larry.Source.Discord.Commands
                 //await ProfileManager.CreateProfileAsync("common_public", newUser.AccountId);
 
 
-                Logger.Information($"Successfully created user with the username {newUser.Username} and the id {newUser.Id}");
+                Logger.Information($"Successfully created user with the username {newUser.Username} and the accountId {newUser.AccountId}");
 
                 var embed = new EmbedBuilder()
                     .WithTitle("Successfully created your account.")

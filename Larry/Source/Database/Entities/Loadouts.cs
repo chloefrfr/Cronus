@@ -34,13 +34,13 @@ namespace Larry.Source.Database.Entities
         public string GliderId { get; set; }
 
         [Column("danceId")]
-        public string DanceId { get; set; }
+        public string[] DanceId { get; set; }
 
         [Column("pickaxeId")]
         public string PickaxeId { get; set; }
 
         [Column("itemWrapId")]
-        public string ItemWrapId { get; set; }
+        public string[] ItemWrapId { get; set; }
 
         [Column("contrailId")]
         public string ContrailId { get; set; }

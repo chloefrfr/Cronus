@@ -62,7 +62,11 @@ namespace Larry.Source.Controllers.Profile.Operations
                { "BackpackId", item => loadout.BackpackId = item },
                { "PickaxeId", item => loadout.PickaxeId = item },
                { "GliderId", item => loadout.GliderId = item },
-               { "ContrailId", item => loadout.ContrailId = item }
+               { "ContrailId", item => loadout.ContrailId = item },
+               { "LoadingScreenId", item => loadout.LoadingScreenId = item },
+               { "MusicPackId", item => loadout.MusicPackId = item },
+               { "BannerId", item => loadout.BannerId = item },
+               { "BannerColorId", item => loadout.BannerColorId = item }
             };
 
             if (categoryToPropertyMap.ContainsKey(categoryInDb))
@@ -72,41 +76,40 @@ namespace Larry.Source.Controllers.Profile.Operations
             }
             else if (categoryInDb == "DanceId")
             {
-                var currentDanceItems = loadout.DanceId?.Split(',').ToList() ?? new List<string> { "", "", "", "", "", "" };
+                var currentDanceItems = loadout.DanceId ?? new string[6];
 
                 if (body.SlotIndex == -1)
                 {
-                    currentDanceItems.ForEach(_ => _ = body.ItemToSlot);
+                    Array.Fill(currentDanceItems, body.ItemToSlot);
                 }
                 else
                 {
-                    currentDanceItems[body.SlotIndex] = body.ItemToSlot;
+                    currentDanceItems[body.SlotIndex] = body.ItemToSlot; 
                 }
 
-                lockerData.slots[body.Category].items = new List<string>(currentDanceItems);
-                loadout.DanceId = string.Join(",", currentDanceItems);
+                lockerData.slots[body.Category].items = currentDanceItems.ToList();
+                loadout.DanceId = currentDanceItems;
             }
             else if (categoryInDb == "ItemWrapId")
             {
-                var currentWrapItems = loadout.ItemWrapId?.Split(',').ToList() ?? new List<string> { "", "", "", "", "", "", "" };
+                var currentWrapItems = loadout.ItemWrapId ?? new string[7];
 
                 if (body.SlotIndex == -1)
                 {
-                    currentWrapItems.ForEach(_ => _ = body.ItemToSlot);
+                    Array.Fill(currentWrapItems, body.ItemToSlot);
                 }
                 else
                 {
-                    currentWrapItems[body.SlotIndex] = body.ItemToSlot;
+                    currentWrapItems[body.SlotIndex] = body.ItemToSlot; 
                 }
 
-                lockerData.slots[body.Category].items = new List<string>(currentWrapItems);
-                loadout.ItemWrapId = string.Join(",", currentWrapItems);
+                lockerData.slots[body.Category].items = currentWrapItems.ToList();
+                loadout.ItemWrapId = currentWrapItems;
             }
             else
             {
                 throw new InvalidOperationException($"Unknown category: {categoryInDb}");
             }
-
 
             var updateLoadoutTask = loadoutsRepository.UpdateAsync(loadout);
 

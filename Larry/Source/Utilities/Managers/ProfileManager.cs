@@ -307,6 +307,9 @@ namespace Larry.Source.Utilities.Managers
                     case "use_count":
                         relevantAttributesDict["use_count"] = (int)propertyValue;
                         break;
+                    case "platform":
+                        relevantAttributesDict["platform"] = propertyValue ?? "";
+                        break;
                     case "variants":
                         relevantAttributesDict["variants"] = (List<Variants>)propertyValue;
                         break;
