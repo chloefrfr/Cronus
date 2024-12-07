@@ -1,5 +1,6 @@
 ﻿using ShopGenerator.Storefront.Enums;
 using ShopGenerator.Storefront.Extensions;
+using ShopGenerator.Storefront.Generation.Prices;
 using ShopGenerator.Storefront.Models;
 using ShopGenerator.Storefront.Utilities;
 using System;
@@ -26,7 +27,11 @@ namespace ShopGenerator.Storefront.Generation
             if (item == null || string.IsNullOrEmpty(item?.Type.BackendValue) || string.IsNullOrEmpty(item?.Id))
                 throw new ArgumentNullException(nameof(item));
 
-            var entry = CreateBaseEntry(item, section, 0);
+            var itemPrice = ItemPrices.GetPrice(item);
+            if (itemPrice == null)
+                throw new ArgumentNullException(nameof(itemPrice));
+
+            var entry = CreateBaseEntry(item, section, itemPrice ?? 0);
 
             void AddMetaInfo(string key, string value)
             {
