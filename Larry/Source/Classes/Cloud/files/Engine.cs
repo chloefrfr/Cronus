@@ -7,13 +7,17 @@
             return @"
 [OnlineSubsystemMcp.Xmpp]
 bUseSSL=false
-ServerAddr=""ws://127.0.0.1""
-ServerPort=81
+ServerAddr=""ws://127.0.0.1:443""
+ServerPort=443
+bPrivateChatFriendsOnly=true
+bResetPingTimeoutOnReceiveStanza=true
+bUsePlainTextAuth=true
 
 [OnlineSubsystemMcp.Xmpp Prod]
 bUseSSL=false
-ServerAddr=""ws://127.0.0.1""
-ServerPort=81
+ServerAddr=""ws://127.0.0.1:443""
+ServerPort=443
+Domain=127.0.0.1
 
 [OnlineSubsystemMcp]
 bUsePartySystemV2=false

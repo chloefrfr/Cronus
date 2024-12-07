@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Larry.Source.Utilities.Managers;
 using ShopGenerator.Storefront.Services;
 using Larry.Source.Utilities.Schedule;
+using Larry.Source.WebSockets;
 
 namespace Larry
 {
@@ -18,6 +19,7 @@ namespace Larry
     {
         public static FileProviderManager _fileProviderManager;
         public static ShopGenerator.Storefront.Services.ShopGenerator _shopGenerator;
+        public static SocketServer _socketServer;
 
         static async Task Main(string[] args)
         {
@@ -36,6 +38,7 @@ namespace Larry
                 builder.Services.AddEndpointsApiExplorer();
                 builder.Host.UseSerilog();
                 builder.Services.AddSingleton<FileProviderManager>();
+                builder.Services.AddSingleton<SocketServer>();
                 builder.Services.AddHttpClient<IAPIService, APIService>();
                 builder.Services.AddSingleton<ShopGenerator.Storefront.Services.ShopGenerator>();
 
@@ -48,7 +51,8 @@ namespace Larry
                 _fileProviderManager = app.Services.GetRequiredService<FileProviderManager>();
                 await _fileProviderManager.InitializeAsync();
                 await _fileProviderManager.LoadAllCosmeticsAsync();
-
+                _socketServer = app.Services.GetRequiredService<SocketServer>();
+                var socketServerTask = Task.Run(() => _socketServer.StartAsync(args));
                 _shopGenerator = app.Services.GetRequiredService<ShopGenerator.Storefront.Services.ShopGenerator>();
 
                 app.UseHttpsRedirection();
@@ -104,6 +108,7 @@ namespace Larry
                 }
 
                 await Task.WhenAll(botTask, webAppTask);
+                await Task.Delay(-1);
             }
             catch (Exception ex)
             {

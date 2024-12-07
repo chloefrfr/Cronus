@@ -58,6 +58,7 @@
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="Discord.Net" Version="3.16.0" />
+    <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="jose-jwt" Version="5.0.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.1.2" />
     <PackageReference Include="Npgsql" Version="8.0.5" />
