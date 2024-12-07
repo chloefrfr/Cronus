@@ -78,7 +78,23 @@ git clone --recursive https://github.com/chloefrfr/Larry.git
    - **GameDirectory**: Path to the Fortnite game directory (eg.. `D:\\FortniteBuilds\\Fortnite 12.41\\FortniteGame\\Content\\Paks`).
    - **CurrentVersion**: The Fortnite build version (e.g., `11.31`).
 
-## **Step 2: Running the Project**
+## **Step 2: Creating the Database**
+
+1. Search `psql` in the start menu.
+2. Login to your PostgreSQL server.
+3. Create a new database using the following command:
+
+```sql
+CREATE DATABASE dbtest;
+```
+
+4. Exit
+
+```sql
+\q
+```
+
+## **Step 3: Running the Project**
 
 1. Open the project in **Visual Studio 2022**.
 2. Press `F5` to run the project.
