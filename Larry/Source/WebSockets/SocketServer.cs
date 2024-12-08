@@ -24,6 +24,7 @@ namespace Larry.Source.WebSockets
         {
             ["open"] = new Action<IWebSocketConnection, SocketClient, XElement>(OpenHandler.Handle),
             ["auth"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(AuthHandler.HandleAsync),
+            ["iq"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(IqHandler.HandleAsync),
         };
 
         public async Task StartAsync(string[] args)
@@ -92,6 +93,21 @@ namespace Larry.Source.WebSockets
                 Logger.Warning($"No handler found for root element: {rootName}");
             }
 
+            bool isValidConnection =
+                !_client.IsLoggedIn &&
+                _client.IsAuthenticated &&
+                !string.IsNullOrEmpty(_client.AccountId) &&
+                !string.IsNullOrEmpty(_client.DisplayName) &&
+                !string.IsNullOrEmpty(_client.Jid) &&
+                !string.IsNullOrEmpty(_client.Resource);
+
+            if (isValidConnection)
+            {
+                XmppService.AddClient(_client);
+                _client.IsLoggedIn = true;
+
+                Logger.Information($"Successfully logged in as '{_client.DisplayName}'");
+            }
         }
     }
 }
