@@ -12,31 +12,39 @@ using Larry.Source.WebSockets.Roots;
 using System.Collections.Concurrent;
 using Larry.Source.WebSockets.Services;
 using System.Runtime.CompilerServices;
+using System.Net.Sockets;
 
 namespace Larry.Source.WebSockets
 {
     public class SocketServer
     {
-        private static readonly ConcurrentDictionary<string, Action<IWebSocketConnection, SocketClient, XElement>> Handlers = new ConcurrentDictionary<string, Action<IWebSocketConnection, SocketClient, XElement>>
+        private SocketClient _client = null;
+
+        private static readonly ConcurrentDictionary<string, Delegate> Handlers = new ConcurrentDictionary<string, Delegate>
         {
-            ["open"] = OpenHandler.Handle,
+            ["open"] = new Action<IWebSocketConnection, SocketClient, XElement>(OpenHandler.Handle),
+            ["auth"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(AuthHandler.HandleAsync),
         };
 
         public async Task StartAsync(string[] args)
         {
             var socketServer = new WebSocketServer("ws://0.0.0.0:443");
-            SocketClient client = null;
             socketServer.Start(server =>
             {
-                server.OnOpen = () => OnOpen();
-                server.OnMessage = async (message) => OnMessage(server, client, message);
+                server.OnOpen = () => OnOpen(server);
+                server.OnMessage = async (message) => await OnMessage(server , message);
                 server.OnClose = () => OnClose();
             });
         }
 
-        private void OnOpen()
+        private void OnOpen(IWebSocketConnection socket)
         {
             Logger.Information("WebSocket connection established");
+            _client = new SocketClient
+            {
+                Socket = socket
+            };
+
         }
 
         private void OnClose()
@@ -44,7 +52,7 @@ namespace Larry.Source.WebSockets
             Logger.Information($"Socket connection closed.");
         }
 
-        private void OnMessage(IWebSocketConnection socket, SocketClient client, string message)
+        private async Task OnMessage(IWebSocketConnection socket, string message)
         {
             var xElement = XElement.Parse(message);
 
@@ -61,7 +69,18 @@ namespace Larry.Source.WebSockets
             {
                 try
                 {
-                    handler(socket, client, xElement);
+                    if (handler is Func<IWebSocketConnection, SocketClient, XElement, Task> asyncHandler)
+                    {
+                        await asyncHandler(socket, _client, xElement);
+                    }
+                    else if (handler is Action<IWebSocketConnection, SocketClient, XElement> syncHandler)
+                    {
+                        syncHandler(socket, _client, xElement);
+                    }
+                    else
+                    {
+                        Logger.Error($"Handler for '{rootName}' has an unsupported type.");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -72,6 +91,7 @@ namespace Larry.Source.WebSockets
             {
                 Logger.Warning($"No handler found for root element: {rootName}");
             }
+
         }
     }
 }

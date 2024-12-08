@@ -7,12 +7,12 @@ namespace Larry.Source.WebSockets.Models
     {
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public IWebSocketConnection Socket { get; set; }
-        public bool IsLoggedIn { get; set; }
-        public bool IsAuthenticated { get; set; }
-        public string AccountId { get; set; }
-        public string DisplayName { get; set; }
-        public string Token { get; set; }
-        public string Jid { get; set; }
-        public string Resource { get; set; }
+        public bool IsLoggedIn { get; set; } = false;
+        public bool IsAuthenticated { get; set; } = false;
+        public string AccountId { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public string Jid { get; set; } = string.Empty;
+        public string Resource { get; set; } = string.Empty;    
     }
 }

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Fleck;
 using Larry.Source.WebSockets.Models;
+using System.Net.WebSockets;
 
 namespace Larry.Source.WebSockets.Roots
 {
@@ -19,41 +20,56 @@ namespace Larry.Source.WebSockets.Roots
 
         public static void Handle(IWebSocketConnection socket, SocketClient client, XElement root)
         {
-            client = new SocketClient
-            {
-                Socket = socket,
-                IsAuthenticated = false,
-                Jid = string.Empty
-            };
-
             SendOpenMessage(socket, client);
-            SendFeaturesMessage(socket);
+            SendFeaturesMessage(socket, client);
         }
 
         private static void SendOpenMessage(IWebSocketConnection socket, SocketClient client)
         {
-            var openMessage = new XElement(JabberNamespace + "open",
-                new XAttribute("xmlns", JabberNamespace.NamespaceName),
+            var openMessage = new XElement(
+                XNamespace.Get("urn:ietf:params:xml:ns:xmpp-framing") + "open",
                 new XAttribute("from", "prod.ol.epicgames.com"),
-                new XAttribute("id", client.Socket.ConnectionInfo.Id),
+                new XAttribute("id", socket.ConnectionInfo.Id),
                 new XAttribute("version", "1.0"),
-                new XAttribute(XNamespace.Xml + "lang", "en"));
+                new XAttribute(XNamespace.Get("xml") + "lang", "en")
+            ).ToString();
 
             socket.Send(openMessage.ToString());
         }
 
-        private static void SendFeaturesMessage(IWebSocketConnection socket)
+        private static void SendFeaturesMessage(IWebSocketConnection socket, SocketClient client)
         {
-            var featuresMessage = new XElement(NsStream + "features",
-                new XElement(NsSasl + "mechanisms",
-                    new XElement("mechanism", "PLAIN")),
-                new XElement(NsRosterVer + "ver"),
-                new XElement(NsTls + "starttls"),
-                new XElement(NsCompress + "compression",
-                    new XElement("method", "zlib")),
-                new XElement(NsAuth + "auth"));
-
-            socket.Send(featuresMessage.ToString());
+            if (client.IsAuthenticated)
+            {
+                socket.Send(new XElement(
+                    XNamespace.Get("http://etherx.jabber.org/streams") + "features",
+                    new XElement(XNamespace.Get("urn:xmpp:features:rosterver") + "ver"),
+                    new XElement(XNamespace.Get("urn:ietf:params:xml:ns:xmpp-tls") + "starttls"),
+                    new XElement(XNamespace.Get("urn:ietf:params:xml:ns:xmpp-bind") + "bind"),
+                    new XElement(
+                        XNamespace.Get("http://jabber.org/features/compress") + "compression",
+                        new XElement("method", "zlib")
+                    ),
+                    new XElement(XNamespace.Get("urn:ietf:params:xml:ns:xmpp-session") + "session")
+                ).ToString());
+            }
+            else
+            {
+                socket.Send(new XElement(
+                    XNamespace.Get("http://etherx.jabber.org/streams") + "features",
+                    new XElement(
+                        XNamespace.Get("urn:ietf:params:xml:ns:xmpp-sasl") + "mechanisms",
+                        new XElement("mechanism", "PLAIN")
+                    ),
+                    new XElement(XNamespace.Get("urn:xmpp:features:rosterver") + "ver"),
+                    new XElement(XNamespace.Get("urn:ietf:params:xml:ns:xmpp-tls") + "starttls"),
+                    new XElement(
+                        XNamespace.Get("http://jabber.org/features/compress") + "compression",
+                        new XElement("method", "zlib")
+                    ),
+                    new XElement(XNamespace.Get("http://jabber.org/features/iq-auth") + "auth")
+                ).ToString());
+            }
         }
     }
 }

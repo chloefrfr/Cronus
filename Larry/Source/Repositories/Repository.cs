@@ -339,6 +339,49 @@ RETURNING id;";
         }
 
         /// <summary>
+        /// Finds a token entity by its account ID and type asynchronously.
+        /// </summary>
+        /// <param name="accountId">The account ID associated with the token.</param>
+        /// <param name="type">The type of the token.</param>
+        /// <returns>The token instance if found; otherwise, null.</returns>
+        public async Task<TEntity> FindTokenByAccountIdAndTypeAsync(string accountId, string type)
+        {
+            EnsureTokensEntity();
+
+            var stopwatch = Stopwatch.StartNew();
+            using var connection = CreateConnection();
+            await OpenConnectionAsync(connection);
+
+            var query = $@"
+        SELECT * 
+        FROM {EntityMapper.GetTableName(new TEntity())} 
+        WHERE accountid = @AccountId AND type = @Type;";
+
+            try
+            {
+                var result = await connection.QueryFirstOrDefaultAsync<TEntity>(
+                    query,
+                    new { AccountId = accountId, Type = type }
+                );
+
+                stopwatch.Stop();
+                Log.Information("FindTokenByAccountIdAndTypeAsync took {ElapsedMilliseconds} ms", stopwatch.ElapsedMilliseconds);
+                return result;
+            }
+            catch (NpgsqlException npgsqlEx)
+            {
+                Log.Error($"PostgreSQL error: {npgsqlEx.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"An error occurred: {ex.Message}");
+                throw;
+            }
+        }
+
+
+        /// <summary>
         /// Queries the database asynchronously with optimized performance.
         /// </summary>
         /// <param name="query">The SQL query string.</param>
