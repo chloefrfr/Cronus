@@ -13,6 +13,7 @@ namespace Larry.Source.WebSockets.Models
         public string DisplayName { get; set; } = string.Empty;
         public string Token { get; set; } = string.Empty;
         public string Jid { get; set; } = string.Empty;
-        public string Resource { get; set; } = string.Empty;    
+        public string Resource { get; set; } = string.Empty;
+        public LastPresenceUpdate LastPresenceUpdate { get; set; } = new();
     }
 }

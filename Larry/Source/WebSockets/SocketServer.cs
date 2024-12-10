@@ -25,9 +25,13 @@ namespace Larry.Source.WebSockets
             ["open"] = new Action<IWebSocketConnection, SocketClient, XElement>(OpenHandler.Handle),
             ["auth"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(AuthHandler.HandleAsync),
             ["iq"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(IqHandler.HandleAsync),
+            ["presence"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(PresenceHandler.HandleAsync)
         };
 
-        public async Task StartAsync(string[] args)
+        /// <summary>
+        /// Starts the WebSocket server and initializes the event handlers for connection management.
+        /// </summary>
+        public async Task StartAsync()
         {
             var socketServer = new WebSocketServer("ws://0.0.0.0:443");
             socketServer.Start(server =>
@@ -38,6 +42,10 @@ namespace Larry.Source.WebSockets
             });
         }
 
+        /// <summary>
+        /// Called when a new WebSocket connection is opened.
+        /// </summary>
+        /// <param name="socket">The WebSocket connection instance.</param>
         private void OnOpen(IWebSocketConnection socket)
         {
             Logger.Information("WebSocket connection established");
@@ -45,14 +53,21 @@ namespace Larry.Source.WebSockets
             {
                 Socket = socket
             };
-
         }
 
+        /// <summary>
+        /// Called when a WebSocket connection is closed.
+        /// </summary>  
         private void OnClose()
         {
             Logger.Information($"Socket connection closed.");
         }
 
+        /// <summary>
+        /// Handles incoming WebSocket messages, parses them, and dispatches them to the appropriate handler.
+        /// </summary>
+        /// <param name="socket">The WebSocket connection instance.</param>
+        /// <param name="message">The message received from the client as a string.</param>
         private async Task OnMessage(IWebSocketConnection socket, string message)
         {
             var xElement = XElement.Parse(message);

@@ -169,6 +169,39 @@ RETURNING id;";
         }
 
         /// <summary>
+        /// Finds all friend entities by the given account ID asynchronously.
+        /// </summary>
+        /// <param name="accountId">The account ID of the user.</param>
+        /// <returns>A list of friend entities if found; otherwise, an empty list.</returns>
+        public async Task<List<Friends>> FindFriendsByAccountIdAsync(string accountId)
+        {
+            EnsureIsCorrectEntity();
+
+            // Call the non-generic method to find entities specifically for Friends
+            return await FindFriendsByColumnAsync("accountid", accountId);
+        }
+
+        /// <summary>
+        /// Finds multiple friend entities by a specified column asynchronously.
+        /// </summary>
+        /// <param name="columnName">The name of the column to search.</param>
+        /// <param name="value">The value to search for.</param>
+        /// <returns>A list of friend entities if found; otherwise, an empty list.</returns>
+        private async Task<List<Friends>> FindFriendsByColumnAsync(string columnName, string value)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            using var connection = CreateConnection();
+            await OpenConnectionAsync(connection);
+
+            var query = $"SELECT * FROM {EntityMapper.GetTableName(new Friends())} WHERE {columnName} = @Value";
+            var result = (await connection.QueryAsync<Friends>(query, new { Value = value })).ToList();
+
+            stopwatch.Stop();
+            return result;
+        }
+
+        /// <summary>
         /// Finds a profile entity by its profile ID and account ID asynchronously.
         /// </summary>
         /// <param name="profileId">The profile ID of the profile.</param>
@@ -310,7 +343,6 @@ RETURNING id;";
             EnsureIsCorrectEntity();
             return await FindByColumnAsync("templateid", templateId);
         }
-
         /// <summary>
         /// Finds an item entity by its lockerName asynchronously.
         /// </summary>
@@ -457,12 +489,21 @@ RETURNING id;";
             if (typeof(TEntity) != typeof(User) &&
                 typeof(TEntity) != typeof(Profiles) &&
                 typeof(TEntity) != typeof(Items) &&
-                typeof(TEntity) != typeof(Loadouts))
+                typeof(TEntity) != typeof(Loadouts) &&
+                typeof(TEntity) != typeof(Friends))
             {
-                throw new InvalidOperationException("This method is only available for User, Profiles, Items entities.");
+                throw new InvalidOperationException("This method is only available for User, Profiles, Items, Loadouts, Friends entities.");
             }
         }
 
+        /// <summary>
+        /// Ensures the entity is of type Friends.
+        /// </summary>
+        private void EnsureFriendsEntity()
+        {
+            if (typeof(TEntity) != typeof(Friends))
+                throw new InvalidOperationException("This method is only available for Friends entities.");
+        }
 
         /// <summary>
         /// Ensures the entity is of type Tokens.

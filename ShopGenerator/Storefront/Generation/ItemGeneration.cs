@@ -39,6 +39,13 @@ namespace ShopGenerator.Storefront.Generation
 
                 randomItem = Constants._items[randomKey];
 
+                if (randomItem.Type.BackendValue == "AthenaToy" ||
+                      Constants.ExcludedBackendValues.Contains(randomItem.Type.BackendValue) ||
+                      addedItemIds.Contains(randomItem.Id))
+                {
+                    continue;
+                }
+
                 if (!Constants.ExcludedBackendValues.Contains(randomItem.Type.BackendValue) && !addedItemIds.Contains(randomItem.Id))
                 {
                     // Break the loop if a valid item is found.

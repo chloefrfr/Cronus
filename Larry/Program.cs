@@ -52,7 +52,7 @@ namespace Larry
                 await _fileProviderManager.InitializeAsync();
                 await _fileProviderManager.LoadAllCosmeticsAsync();
                 _socketServer = app.Services.GetRequiredService<SocketServer>();
-                var socketServerTask = Task.Run(() => _socketServer.StartAsync(args));
+                var socketServerTask = Task.Run(() => _socketServer.StartAsync());
                 _shopGenerator = app.Services.GetRequiredService<ShopGenerator.Storefront.Services.ShopGenerator>();
 
                 app.UseHttpsRedirection();
