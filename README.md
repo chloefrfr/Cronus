@@ -2,18 +2,10 @@
 
 Fortnite Backend written in C# and aims to be very performant.
 
-# Getting Started
+# Getting Started and TODO List
 
-Please read [Getting Started](./SETUP.md) on how to setup the project.
-
-# Next
-
-- [ ] Add XMPP.
-- [ ] Add Friend System.
-- [ ] Save the world.
-- [ ] Add a web interface.
-- [ ] More secuirty eg. rate limiting, token validation, etc.
-- [ ] More caching and a better system for handling cache.
+Please read [Getting Started](./Docs/SETUP.md) on how to setup the project. <br />
+If you want to see what is future work, please read [TODO List](./Docs/TODO.md).
 
 # Goals
 
@@ -25,10 +17,7 @@ Please read [Getting Started](./SETUP.md) on how to setup the project.
 
 # Contributing
 
-PLEASE.....
-
-Contributions are welcome...........
-PLEASE IM LOSING MY SANITY
+Contributions are welcome. Simply make a pull request of your changes.
 
 # Submodules
 
