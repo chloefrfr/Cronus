@@ -10,7 +10,7 @@ Not all fortnite versions are currently supported.
 
 1. **[Install Dotnet 7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0):**
 
-   - Downlaod and install the latest version of the .NET 7.0 SDK.
+   - Download and install the latest version of the .NET 7.0 SDK.
    - Verify the installation:
 
    ```bash
