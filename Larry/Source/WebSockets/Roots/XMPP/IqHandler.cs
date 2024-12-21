@@ -1,14 +1,19 @@
 ﻿using Fleck;
+using Larry;
+using Larry.Source;
 using Larry.Source.Database.Entities;
 using Larry.Source.Repositories;
 using Larry.Source.Utilities;
+using Larry.Source.WebSockets;
 using Larry.Source.WebSockets.Models;
+using Larry.Source.WebSockets.Roots;
+using Larry.Source.WebSockets.Roots.XMPP;
 using Larry.Source.WebSockets.Services;
 using System;
 using System.Xml.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace Larry.Source.WebSockets.Roots
+namespace Larry.Source.WebSockets.Roots.XMPP
 {
     public class IqHandler
     {
@@ -79,19 +84,21 @@ namespace Larry.Source.WebSockets.Roots
                             {
                                 presenceXml.Add(new XElement("show", "away"));
                                 presenceXml.Add(new XElement("status", cl.Value.LastPresenceUpdate.Status));
-                            } else
+                            }
+                            else
                             {
                                 presenceXml.Add(new XElement("status", cl.Value.LastPresenceUpdate.Status));
                             }
 
                             socket.Send(presenceXml.ToString());
-                        } else
+                        }
+                        else
                         {
                             Logger.Information("How'd you manage this.");
                         }
                     }
                     break;
-                
+
                 default:
                     Logger.Warning($"Missing attributeId: {AttributeId.Value}");
                     socket.Send(

@@ -13,6 +13,7 @@ using System.Collections.Concurrent;
 using Larry.Source.WebSockets.Services;
 using System.Runtime.CompilerServices;
 using System.Net.Sockets;
+using Larry.Source.WebSockets.Roots.XMPP;
 
 namespace Larry.Source.WebSockets
 {
@@ -33,6 +34,7 @@ namespace Larry.Source.WebSockets
         /// </summary>
         public async Task StartAsync()
         {
+            // TODO: Handle The Matchmaker and XMPP at once
             var socketServer = new WebSocketServer("ws://0.0.0.0:443");
             socketServer.Start(server =>
             {

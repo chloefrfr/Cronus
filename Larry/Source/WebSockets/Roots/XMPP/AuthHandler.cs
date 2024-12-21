@@ -8,8 +8,13 @@ using System.Text;
 using System.Xml.Linq;
 using System.Threading.Tasks;
 using Larry.Source.WebSockets.Services;
+using Larry;
+using Larry.Source;
+using Larry.Source.WebSockets;
+using Larry.Source.WebSockets.Roots;
+using Larry.Source.WebSockets.Roots.XMPP;
 
-namespace Larry.Source.WebSockets.Roots
+namespace Larry.Source.WebSockets.Roots.XMPP
 {
     public class AuthHandler
     {

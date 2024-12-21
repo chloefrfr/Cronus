@@ -1,11 +1,17 @@
 ﻿using Fleck;
+using Larry;
+using Larry.Source;
 using Larry.Source.Utilities;
+using Larry.Source.WebSockets;
+using Larry.Source.WebSockets.Helpers.XMPP;
 using Larry.Source.WebSockets.Models;
+using Larry.Source.WebSockets.Roots;
+using Larry.Source.WebSockets.Roots.XMPP;
 using Larry.Source.WebSockets.Services;
 using Newtonsoft.Json;
 using System.Xml.Linq;
 
-namespace Larry.Source.WebSockets.Roots
+namespace Larry.Source.WebSockets.Roots.XMPP
 {
     public class PresenceHandler
     {
@@ -17,7 +23,7 @@ namespace Larry.Source.WebSockets.Roots
             if (hasTypeAttribute)
             {
                 string rootType = root.Attribute("type")?.Value;
-                string to = root.Attribute("to")?.Value; 
+                string to = root.Attribute("to")?.Value;
 
                 Logger.Information($"LOG : [PresenceHandler] - Root Type: {rootType}");
 
@@ -152,7 +158,8 @@ namespace Larry.Source.WebSockets.Roots
             try
             {
                 status = JsonConvert.DeserializeObject<string>(statusElement.Value.ToString());
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Logger.Error($"Failed to parse status: {ex.Message}");
                 return;
@@ -161,6 +168,9 @@ namespace Larry.Source.WebSockets.Roots
             if (string.IsNullOrWhiteSpace(status)) return;
 
             bool isAway = root.Elements().ToList().FindIndex(x => x.Name.LocalName == "show") == 1 ? false : true;
+
+            await UpdatePresenceForFriend.UpdateAsync(socket, status, false, isAway);
+            await GetUserPresence.GetAsync(false, client.AccountId, client.AccountId);
         }
     }
 }
