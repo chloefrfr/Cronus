@@ -2,6 +2,7 @@
 using Larry.Source.Utilities;
 using Larry.Source.WebSockets.Models;
 using Larry.Source.WebSockets.Services;
+using Newtonsoft.Json;
 using System.Xml.Linq;
 
 namespace Larry.Source.WebSockets.Roots
@@ -82,8 +83,84 @@ namespace Larry.Source.WebSockets.Roots
                 });
                 XmppService.JoinedMUCs.Add(name);
 
+                socket.Send(new XElement(XNamespace.Get("jabber:client") + "presence",
+                    new XAttribute("to", client.Jid),
+                    new XAttribute("from", $"{name}@muc.prod.ol.epicgames.com/{client.DisplayName}:{client.AccountId}:{client.Resource}"),
+                    new XAttribute("type", "available"),
+                    new XElement(XNamespace.Get("http://jabber.org/protocol/muc#user") + "x",
+                        new XElement("item",
+                            new XAttribute("nick", $"{client.DisplayName}:{client.AccountId}:{client.Resource}"),
+                            new XAttribute("jid", client.Jid),
+                            new XAttribute("role", "participant"),
+                            new XAttribute("affiliation", "none")),
+                        new XElement("status",
+                            new XAttribute("code", "110")),
+                        new XElement("status",
+                            new XAttribute("code", "100")),
+                        new XElement("status",
+                            new XAttribute("code", "170"))
+                    )
+                ).ToString().Replace(" xmlns=\"\"", ""));
 
+                var matchingClients = XmppService.XmppMucsDictionary[name].Members
+                    .Select(member => XmppService.Clients
+                        .FirstOrDefault(cl => cl.Value.AccountId == member.AccountId))
+                    .ToList();
+
+                foreach (var matchingClient in matchingClients)
+                {
+                    socket.Send(new XElement(XNamespace.Get("jabber:client") + "presence",
+                        new XAttribute("from", $"{name}@muc.prod.ol.epicgames.com/{matchingClient.Value.DisplayName}:{matchingClient.Value.AccountId}:{matchingClient.Value.Resource}"),
+                        new XAttribute("to", matchingClient.Value.Jid),
+                        new XElement(XNamespace.Get("http://jabber.org/protocol/muc#user") + "x",
+                            new XElement("item",
+                                new XAttribute("nick", $"{matchingClient.Value.DisplayName}:{matchingClient.Value.AccountId}:{matchingClient.Value.Resource}"),
+                                new XAttribute("jid", matchingClient.Value.Jid),
+                                new XAttribute("role", "participant"),
+                                new XAttribute("affiliation", "none")
+                            )
+                        )
+                    ).ToString().Replace(" xmlns=\"\"", ""));
+
+                    if (client.AccountId == matchingClient.Value.AccountId) return;
+
+                    client.Socket.Send(new XElement(XNamespace.Get("jabber:client") + "presence",
+                        new XAttribute("from", $"{name}@muc.prod.ol.epicgames.com/{matchingClient.Value.DisplayName}:{matchingClient.Value.AccountId}:{matchingClient.Value.Resource}"),
+                        new XAttribute("to", matchingClient.Value.Jid),
+                        new XElement(XNamespace.Get("http://jabber.org/protocol/muc#user") + "x",
+                            new XElement("item",
+                                new XAttribute("nick", $"{matchingClient.Value.DisplayName}:{matchingClient.Value.AccountId}:{matchingClient.Value.Resource}"),
+                                new XAttribute("jid", matchingClient.Value.Jid),
+                                new XAttribute("role", "participant"),
+                                new XAttribute("affiliation", "none")
+                            )
+                        )
+                    ).ToString().Replace(" xmlns=\"\"", ""));
+
+                    return;
+                }
             }
+
+            bool hasStatus = root.Elements().Any(e => e.Name.LocalName == "status");
+
+            if (!hasStatus) return;
+
+            var statusElement = root.Elements().Where(x => x.Name.LocalName == "status").First();
+            if (statusElement == null) return;
+
+            string status;
+            try
+            {
+                status = JsonConvert.DeserializeObject<string>(statusElement.Value.ToString());
+            } catch (Exception ex)
+            {
+                Logger.Error($"Failed to parse status: {ex.Message}");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(status)) return;
+
+            bool isAway = root.Elements().ToList().FindIndex(x => x.Name.LocalName == "show") == 1 ? false : true;
         }
     }
 }
