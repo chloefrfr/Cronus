@@ -1,4 +1,5 @@
 ﻿using Larry.Source.WebSockets.Services;
+using Newtonsoft.Json;
 using System.Xml.Linq;
 
 namespace Larry.Source.WebSockets.Helpers.XMPP
@@ -25,18 +26,15 @@ namespace Larry.Source.WebSockets.Helpers.XMPP
             if (sender.LastPresenceUpdate.Away)
             {
                 xmlMessage.Add(
-                    new XElement(XNamespace.Get("jabber:client") + "show", "away"),
-                    new XElement(XNamespace.Get("jabber:client") + "status", sender.LastPresenceUpdate.Status)
+                    new XElement("show", "away"),
+                    new XElement("status", JsonConvert.SerializeObject(sender.LastPresenceUpdate.Status))
                 );
             }
-            else if (!string.IsNullOrEmpty(sender.LastPresenceUpdate.Status))
-            {
-                xmlMessage.Add(
-                   new XElement(XNamespace.Get("jabber:client") + "status", sender.LastPresenceUpdate.Status)
-               );
-            }
+            xmlMessage.Add(
+                new XElement("status", JsonConvert.SerializeObject(sender.LastPresenceUpdate.Status))
+            );
 
-            receiver.Socket.Send(xmlMessage.ToString());
+            receiver.Socket.Send(xmlMessage.ToString().Replace(" xmlns=\"\"", ""));
         }
     }
 }

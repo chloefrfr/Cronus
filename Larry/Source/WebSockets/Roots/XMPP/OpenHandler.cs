@@ -3,8 +3,13 @@ using System.Threading.Tasks;
 using Fleck;
 using Larry.Source.WebSockets.Models;
 using System.Net.WebSockets;
+using Larry;
+using Larry.Source;
+using Larry.Source.WebSockets;
+using Larry.Source.WebSockets.Roots;
+using Larry.Source.WebSockets.Roots.XMPP;
 
-namespace Larry.Source.WebSockets.Roots
+namespace Larry.Source.WebSockets.Roots.XMPP
 {
     public class OpenHandler
     {

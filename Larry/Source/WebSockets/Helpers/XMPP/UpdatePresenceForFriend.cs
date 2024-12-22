@@ -4,13 +4,14 @@ using Larry.Source.Repositories;
 using Larry.Source.Utilities;
 using Larry.Source.WebSockets.Models;
 using Larry.Source.WebSockets.Services;
+using Newtonsoft.Json;
 using System.Xml.Linq;
 
 namespace Larry.Source.WebSockets.Helpers.XMPP
 {
     public class UpdatePresenceForFriend
     {
-        public static async Task UpdateAsync(IWebSocketConnection socket, string status, bool offline, bool away)
+        public static async Task UpdateAsync(IWebSocketConnection socket, object status, bool offline, bool away)
         {
             var senderIndex = XmppService.Clients
                 .Select((client, index) => new { Client = client, Index = index })
@@ -19,7 +20,10 @@ namespace Larry.Source.WebSockets.Helpers.XMPP
             var sender = senderIndex != -1 ? XmppService.Clients.ElementAt(senderIndex).Value : null;
             if (sender == null) return;
 
-            Config config = new Config();
+            sender.LastPresenceUpdate.Away = away;
+            sender.LastPresenceUpdate.Status = JsonConvert.SerializeObject(status);
+
+            Config config = Config.GetConfig();
             var friendRepository = new Repository<Friends>(config.ConnectionUrl);
             var friends = await friendRepository.FindFriendsByAccountIdAsync(sender.AccountId);
 
@@ -47,18 +51,16 @@ namespace Larry.Source.WebSockets.Helpers.XMPP
                     if (sender.LastPresenceUpdate.Away)
                     {
                         xmlMessage.Add(
-                            new XElement(XNamespace.Get("jabber:client") + "show", "away"),
-                            new XElement(XNamespace.Get("jabber:client") + "status", sender.LastPresenceUpdate.Status)
+                            new XElement("show", "away"),
+                            new XElement("status", JsonConvert.SerializeObject(sender.LastPresenceUpdate.Status))
                         );
                     }
-                    else if (!string.IsNullOrEmpty(sender.LastPresenceUpdate.Status))
-                    {
-                        xmlMessage.Add(
-                           new XElement(XNamespace.Get("jabber:client") + "status", sender.LastPresenceUpdate.Status)
-                       );
-                    }
 
-                    client.Socket.Send(xmlMessage.ToString());
+                    xmlMessage.Add(
+                           new XElement("status", JsonConvert.SerializeObject(sender.LastPresenceUpdate.Status))
+                    );
+
+                    client.Socket.Send(xmlMessage.ToString().Replace(" xmlns=\"\"", ""));
                 }
                 else
                 {

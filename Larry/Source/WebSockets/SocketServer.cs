@@ -26,7 +26,8 @@ namespace Larry.Source.WebSockets
             ["open"] = new Action<IWebSocketConnection, SocketClient, XElement>(OpenHandler.Handle),
             ["auth"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(AuthHandler.HandleAsync),
             ["iq"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(IqHandler.HandleAsync),
-            ["presence"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(PresenceHandler.HandleAsync)
+            ["presence"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(PresenceHandler.HandleAsync),
+            ["message"] = new Func<IWebSocketConnection, SocketClient, XElement, Task>(PresenceHandler.HandleAsync)
         };
 
         /// <summary>

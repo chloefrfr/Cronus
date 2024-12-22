@@ -77,4 +77,9 @@
     <ProjectReference Include="..\ShopGenerator\ShopGenerator.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Source\WebSockets\Helpers\Matchmaker\" />
+    <Folder Include="Source\WebSockets\Roots\Matchmaker\" />
+  </ItemGroup>
+
 </Project>

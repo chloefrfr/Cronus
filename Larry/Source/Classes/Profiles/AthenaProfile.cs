@@ -361,6 +361,8 @@ namespace Larry.Source.Classes.Profiles
                 { "favorite_backpack", (value, attr) => attr.attributes.favorite_backpack = value?.ToString() },
                 { "favorite_loadingscreen", (value, attr) => attr.attributes.favorite_loadingscreen = value?.ToString() },
                 { "favorite_skydivecontrail", (value, attr) => attr.attributes.favorite_skydivecontrail = value?.ToString() },
+                { "loadouts", (value, attr) => attr.attributes.loadouts = attr.attributes.loadouts = value is JToken loadouts ? loadouts.ToObject<List<string>>() ?? new List<string>() : new List<string>() },
+                { "quest_manager", (value, attr) => attr.attributes.quest_manager = value is JToken questManager ? questManager.ToObject<QuestManager>() ?? new QuestManager() : new QuestManager() },
                 { "favorite_musicpack", (value, attr) => attr.attributes.favorite_musicpack = value?.ToString() },
                 { "favorite_itemwraps", (value, attr) =>
                     attr.attributes.favorite_itemwraps = value is JToken favoriteItemwrapsToken ? favoriteItemwrapsToken.ToObject<List<string>>() ?? new List<string>() : new List<string>()

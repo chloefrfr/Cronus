@@ -154,18 +154,17 @@ namespace Larry.Source.WebSockets.Roots.XMPP
             var statusElement = root.Elements().Where(x => x.Name.LocalName == "status").First();
             if (statusElement == null) return;
 
-            string status;
+            object status;
+            Console.WriteLine(statusElement.Value.ToString());
             try
             {
-                status = JsonConvert.DeserializeObject<string>(statusElement.Value.ToString());
+                status = JsonConvert.DeserializeObject(statusElement.Value.ToString());
             }
             catch (Exception ex)
             {
                 Logger.Error($"Failed to parse status: {ex.Message}");
                 return;
             }
-
-            if (string.IsNullOrWhiteSpace(status)) return;
 
             bool isAway = root.Elements().ToList().FindIndex(x => x.Name.LocalName == "show") == 1 ? false : true;
 
