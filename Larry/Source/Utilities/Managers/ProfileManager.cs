@@ -2,7 +2,6 @@
 using Larry.Source.Classes.Profile;
 using Larry.Source.Database.Entities;
 using Larry.Source.Repositories;
-using Larry.Source.QueryBuilder;
 using Larry.Source.Mappings;
 using System.Diagnostics;
 using Newtonsoft.Json;
@@ -21,6 +20,7 @@ using CUE4Parse.FileProvider;
 using K4os.Compression.LZ4.Internal;
 using System.Collections.Concurrent;
 using Microsoft.IdentityModel.Tokens;
+using Larry.Source.Utilities.Managers.Helpers;
 
 namespace Larry.Source.Utilities.Managers
 {
@@ -108,51 +108,62 @@ namespace Larry.Source.Utilities.Managers
         /// <returns>A list of items for the Athena profile.</returns>
         private static List<Items> CreateAthenaItems(string accountId)
         {
-            return new List<Items>
+            var items = new List<Items>
             {
-                CreateItem(ProfileIds.Athena, accountId, "AthenaPickaxe:DefaultPickaxe"),
-                CreateItem(ProfileIds.Athena, accountId, "AthenaGlider:DefaultGlider"),
-                CreateItem(ProfileIds.Athena, accountId, "AthenaDance:EID_DanceMoves"),
-                CreateItem(ProfileIds.Athena, accountId, "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
-                CreateStatItem(ProfileIds.Athena, accountId, "use_random_loadout", false),
-                CreateStatItem(ProfileIds.Athena, accountId, "past_seasons", new List<PastSeasons>()),
-                CreateStatItem(ProfileIds.Athena, accountId, "season_match_boost", 0),
-                CreateStatItem(ProfileIds.Athena, accountId, "loadouts", new List<string>()),
-                CreateStatItem(ProfileIds.Athena, accountId, "mfa_reward_claimed", false),
-                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_overflow", 0),
-                CreateStatItem(ProfileIds.Athena, accountId, "current_mtx_platform", "Epic"),
-                CreateStatItem(ProfileIds.Athena, accountId, "last_xp_interaction", DateTime.UtcNow.ToString("o")),
-                CreateStatItem(ProfileIds.Athena, accountId, "quest_manager", new QuestManager
+                ProfileCreation.CreateItem(ProfileIds.Athena, accountId, "AthenaPickaxe:DefaultPickaxe"),
+                ProfileCreation.CreateItem(ProfileIds.Athena, accountId, "AthenaGlider:DefaultGlider"),
+                ProfileCreation.CreateItem(ProfileIds.Athena, accountId, "AthenaDance:EID_DanceMoves"),
+                ProfileCreation.CreateItem(ProfileIds.Athena, accountId, "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
+            };
+
+            var statItems = new (string key, object value)[]
+            {
+                ("use_random_loadout", false),
+                ("past_seasons", new List<PastSeasons>()),
+                ("season_match_boost", 0),
+                ("loadouts", new List<string>()),
+                ("mfa_reward_claimed", false),
+                ("rested_xp_overflow", 0),
+                ("current_mtx_platform", "Epic"),
+                ("last_xp_interaction", DateTime.UtcNow.ToString("o")),
+                ("quest_manager", new QuestManager
                 {
                     dailyLoginInterval = DateTime.MinValue.ToString("o"),
                     dailyQuestRerolls = 1,
                     questPoolStats = new QuestPoolStats()
                 }),
-                CreateStatItem(ProfileIds.Athena, accountId, "book_level", 1),
-                CreateStatItem(ProfileIds.Athena, accountId, "season_num", 1),
-                CreateStatItem(ProfileIds.Athena, accountId, "book_xp", 0),
-                CreateStatItem(ProfileIds.Athena, accountId, "creative_dynamic_xp", new Dictionary<string, int>()),
-                CreateStatItem(ProfileIds.Athena, accountId, "season", new Season { numWins = 0, numHighBracket = 0, numLowBracket = 0 }),
-                CreateStatItem(ProfileIds.Athena, accountId, "lifetime_wins", 0),
-                CreateStatItem(ProfileIds.Athena, accountId, "book_purchased", false),
-                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_exchange", 1),
-                CreateStatItem(ProfileIds.Athena, accountId, "level", 1),
-                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp", 2500),
-                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_mult", 4),
-                CreateStatItem(ProfileIds.Athena, accountId, "accountLevel", 1),
-                CreateStatItem(ProfileIds.Athena, accountId, "rested_xp_cumulative", 52500),
-                CreateStatItem(ProfileIds.Athena, accountId, "xp", 0),
-                CreateStatItem(ProfileIds.Athena, accountId, "active_loadout_index", 0),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_character", "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_pickaxe", "AthenaPickaxe:DefaultPickaxe"),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_glider", "AthenaGlider:DefaultGlider"),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_backpack", ""),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_skydivecontrail", ""),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_loadingscreen", ""),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_musicpack", ""),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_dance", new List<string>()),
-                CreateStatItem(ProfileIds.Athena, accountId, "favorite_itemwraps", new List<string>()),
+                ("book_level", 1),
+                ("season_num", 1),
+                ("book_xp", 0),
+                ("creative_dynamic_xp", new Dictionary<string, int>()),
+                ("season", new Season { numWins = 0, numHighBracket = 0, numLowBracket = 0 }),
+                ("lifetime_wins", 0),
+                ("book_purchased", false),
+                ("rested_xp_exchange", 1),
+                ("level", 1),
+                ("rested_xp", 2500),
+                ("rested_xp_mult", 4),
+                ("accountLevel", 1),
+                ("rested_xp_cumulative", 52500),
+                ("xp", 0),
+                ("active_loadout_index", 0),
+                ("favorite_character", "AthenaCharacter:CID_001_Athena_Commando_F_Default"),
+                ("favorite_pickaxe", "AthenaPickaxe:DefaultPickaxe"),
+                ("favorite_glider", "AthenaGlider:DefaultGlider"),
+                ("favorite_backpack", ""),
+                ("favorite_skydivecontrail", ""),
+                ("favorite_loadingscreen", ""),
+                ("favorite_musicpack", ""),
+                ("favorite_dance", new List<string>()),
+                ("favorite_itemwraps", new List<string>())
             };
+
+            foreach (var (key, value) in statItems)
+            {
+                items.Add(ProfileCreation.CreateStatItem(ProfileIds.Athena, accountId, key, value));
+            }
+
+            return items;
         }
 
         /// <summary>
@@ -180,7 +191,7 @@ namespace Larry.Source.Utilities.Managers
         {
             return new List<Items>
             {
-                CreateCCItem(ProfileIds.CommonCore, accountId, "Currency:MtxPurchased")
+               ProfileCreation.CreateCCItem(ProfileIds.CommonCore, accountId, "Currency:MtxPurchased")
             };
         }
 
@@ -202,67 +213,6 @@ namespace Larry.Source.Utilities.Managers
         }
 
         /// <summary>
-        /// Creates a new item with the specified profile ID and template ID.
-        /// </summary>
-        /// <param name="profileId">The ID of the profile the item belongs to.</param>
-        /// <param name="templateId">The template ID of the item.</param>
-        /// <returns>A new instance of <see cref="Items"/>.</returns>
-        private static Items CreateItem(string profileId, string accountId, string templateId)
-        {
-            return new Items
-            {
-                AccountId = accountId,
-                ProfileId = profileId,
-                TemplateId = templateId,
-                Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
-                {
-                    xp = 0,
-                    level = 1,
-                    variants = new List<Variants>(),
-                    item_seen = false,
-                }),
-                Quantity = 1,
-                IsStat = false
-            };
-        }
-
-        /// <summary>
-        /// Creates a new item with the specified profile ID and template ID.
-        /// </summary>
-        /// <param name="profileId">The ID of the profile the item belongs to.</param>
-        /// <param name="templateId">The template ID of the item.</param>
-        /// <returns>A new instance of <see cref="Items"/>.</returns>
-        private static Items CreateCCItem(string profileId, string accountId, string templateId)
-        {
-            return new Items
-            {
-                AccountId = accountId,
-                ProfileId = profileId,
-                TemplateId = templateId,
-                Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
-                {
-                    platform = "EpicPC",
-                    level = 1,
-                }),
-                Quantity = templateId == "Currency:MtxPurchased" ? 0 : 1,
-                IsStat = false
-            };
-        }
-
-        private static Items CreateStatItem(string profileId, string accountId, string templateId, dynamic value)
-        {
-            return new Items
-            {
-                AccountId = accountId,
-                ProfileId = profileId,
-                TemplateId = templateId,
-                Value = System.Text.Json.JsonSerializer.Serialize(value),
-                Quantity = 1,
-                IsStat = true
-            };
-        }
-
-        /// <summary>
         /// Saves the attributes of an item asynchronously.
         /// </summary>
         /// <param name="item">The item whose attributes are to be saved.</param>
@@ -274,15 +224,14 @@ namespace Larry.Source.Utilities.Managers
                 return;
             }
 
-            dynamic relevantAttributes = new System.Dynamic.ExpandoObject();
-            var relevantAttributesDict = (IDictionary<string, object>)relevantAttributes;
+            var relevantAttributes = new Dictionary<string, object>();
+            var missingProperties = new List<string>();
 
             var attributesType = item.attributes.GetType();
             foreach (var property in attributesType.GetProperties())
             {
                 var jsonProperty = property.GetCustomAttribute<JsonPropertyAttribute>();
-                var jsonPropertyName = jsonProperty != null ? jsonProperty.PropertyName : property.Name;
-
+                var jsonPropertyName = jsonProperty?.PropertyName ?? property.Name;
                 var propertyValue = property.GetValue(item.attributes);
 
                 if (propertyValue == null)
@@ -293,58 +242,40 @@ namespace Larry.Source.Utilities.Managers
                 switch (jsonPropertyName)
                 {
                     case "favorite":
-                        relevantAttributesDict["favorite"] = (bool)propertyValue;
-                        break;
                     case "item_seen":
-                        relevantAttributesDict["item_seen"] = (bool)propertyValue;
+                        relevantAttributes[jsonPropertyName] = (bool)propertyValue;
                         break;
                     case "xp":
-                        relevantAttributesDict["xp"] = (int)propertyValue;
-                        break;
                     case "level":
-                        relevantAttributesDict["level"] = (int)propertyValue;
-                        break;
                     case "use_count":
-                        relevantAttributesDict["use_count"] = (int)propertyValue;
+                        relevantAttributes[jsonPropertyName] = (int)propertyValue;
                         break;
                     case "platform":
-                        relevantAttributesDict["platform"] = propertyValue ?? "";
+                    case "banner_color_template":
+                    case "banner_icon_template":
+                    case "locker_name":
+                        relevantAttributes[jsonPropertyName] = propertyValue?.ToString() ?? "";
                         break;
                     case "variants":
-                        relevantAttributesDict["variants"] = (List<Variants>)propertyValue;
-                        break;
-                    case "banner_color_template":
-                        relevantAttributesDict["banner_color_template"] = propertyValue ?? "";  
-                        break;
-                    case "banner_icon_template":
-                        relevantAttributesDict["banner_icon_template"] = propertyValue ?? "";
-                        break;
-                    case "locker_name":
-                        relevantAttributesDict["locker_name"] = propertyValue ?? ""; 
+                        relevantAttributes[jsonPropertyName] = (List<Variants>)propertyValue;
                         break;
                     case "locker_slots_data":
-                        if (propertyValue != null)
-                        {
-                            relevantAttributesDict["locker_slots_data"] = propertyValue;
-                        }
+                        relevantAttributes[jsonPropertyName] = propertyValue;
                         break;
                     default:
-                        Logger.Warning($"Missing property '{jsonPropertyName}'");
+                        missingProperties.Add(jsonPropertyName);
                         break;
                 }
             }
 
-            var cleanedAttributes = relevantAttributesDict.Where(kv => kv.Value != null).ToDictionary(kv => kv.Key, kv => kv.Value);
-
-            if (cleanedAttributes.Count == 0)
+            if (missingProperties.Any())
             {
-                return;
+                Logger.Warning($"Missing properties: {string.Join(", ", missingProperties)}");
             }
 
-            relevantAttributes = new System.Dynamic.ExpandoObject();
-            foreach (var kv in cleanedAttributes)
+            if (!relevantAttributes.Any())
             {
-                ((IDictionary<string, object>)relevantAttributes)[kv.Key] = kv.Value;
+                return;
             }
 
             var newItem = new Items
@@ -360,7 +291,6 @@ namespace Larry.Source.Utilities.Managers
             await itemsRepository.SaveAsync(newItem);
         }
 
-
         /// <summary>
         /// Asynchronously saves stat attributes for a specified user profile and account.
         /// </summary>
@@ -374,7 +304,8 @@ namespace Larry.Source.Utilities.Managers
         {
             try
             {
-                // Idk what happened but the type of the stats changed three different times within the span of 4 minutes
+                var saveTasks = new List<Task>();
+
                 foreach (var stat in stats)
                 {
                     var newItem = new Items
@@ -386,91 +317,15 @@ namespace Larry.Source.Utilities.Managers
                         Quantity = 1,
                         IsStat = true
                     };
-
-                    await itemsRepository.SaveAsync(newItem);
+                    saveTasks.Add(itemsRepository.SaveAsync(newItem));
                 }
+
+                await Task.WhenAll(saveTasks);
             }
             catch (Exception ex)
             {
                 Logger.Error($"Failed to save attributes: {ex.Message}");
             }
-        }
-
-        public static async Task GrantAll(string accountId)
-        {
-            Config config = Config.GetConfig();
-            List<string> cosmeticFiles = await Program._fileProviderManager.LoadAllCosmeticsAsync();
-            Repository<Items> itemRepository = new Repository<Items>(config.ConnectionUrl);
-            var itemsToSave = new ConcurrentBag<Items>(); 
-
-            var cosmeticTypeMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "characters", "AthenaCharacter" },
-                { "backpacks", "AthenaBackpack" },
-                { "pickaxes", "AthenaPickaxe" },
-                { "dances", "AthenaDance" },
-                { "musicpacks", "AthenaMusicPack" },
-                { "pets", "AthenaBackpack" },
-                { "sprays", "AthenaDance" },
-                { "toys", "AthenaDance" },
-                { "loadingscreens", "AthenaLoadingScreen" },
-                { "gliders", "AthenaGlider" },
-                { "contrails", "AthenaSkyDiveContrail" },
-                { "petcarriers", "AthenaPetCarrier" },
-                { "battlebuses", "AthenaBattleBus" },
-                { "victoryposes", "AthenaVictoryPose" },
-                { "consumableemotes", "AthenaConsumableEmote" },
-                { "wraps", "AthenaItemWrap" },
-                { "itemwraps", "AthenaItemWrap" }
-            };
-
-            string GetCosmeticTypeKey(string cosmeticPath)
-            {
-                var pathSegments = cosmeticPath.ToLower().Split('/');
-                return pathSegments.Length > 5 ? pathSegments[5] : string.Empty;
-            }
-
-            await Task.WhenAll(cosmeticFiles.Select(async cosmeticPath =>
-            {
-                var cosmeticName = cosmeticPath.SubstringAfterLast("/").SubstringBefore(".");
-                var cosmeticTypeKey = GetCosmeticTypeKey(cosmeticPath);
-
-                if (cosmeticTypeMapping.TryGetValue(cosmeticTypeKey, out var cosmeticType))
-                {
-                    var templateId = $"{cosmeticType}:{cosmeticName}";
-                    var isAlreadyInDB = await itemRepository.FindByTemplateIdAsync(templateId);
-                    var variant = await Program._fileProviderManager.GetVariantsAsync(cosmeticPath.SubstringBefore("."));
-
-                    if (isAlreadyInDB != null)
-                    {
-                        return;
-                    }
-
-
-                    var newItem = new Items
-                    {
-                        AccountId = accountId,
-                        ProfileId = "athena",
-                        TemplateId = templateId,
-                        Value = System.Text.Json.JsonSerializer.Serialize(new ItemValue
-                        {
-                            item_seen = false,
-                            variants = variant,
-                            xp = 0,
-                            favorite = false
-                        }),
-                        Quantity = 1,
-                        IsStat = false
-                    };
-
-                    await itemRepository.SaveAsync(newItem);
-                    itemsToSave.Add(newItem);
-                }
-                else
-                {
-                    Logger.Error($"Unknown cosmetic type: {cosmeticName}");
-                }
-            }));
         }
 
         /// <summary>

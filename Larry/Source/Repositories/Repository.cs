@@ -112,7 +112,7 @@ RETURNING id;";
                     var result = await connection.QueryAsync<TEntity>(commandDefinition).ConfigureAwait(false);
                     transaction.Commit();
                     stopwatch.Stop();
-                    Logger.Information($"GetAllItemsByAccountIdAsync took {stopwatch.ElapsedMilliseconds} ms");
+                    //Logger.Information($"GetAllItemsByAccountIdAsync took {stopwatch.ElapsedMilliseconds} ms");
                     return result.AsList();
                 }
                 catch (TimeoutException ex)

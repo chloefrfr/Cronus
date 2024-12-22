@@ -5,6 +5,7 @@ using Larry.Source.Interfaces;
 using Larry.Source.Repositories;
 using Larry.Source.Utilities;
 using Larry.Source.Utilities.Managers;
+using Larry.Source.Utilities.Managers.Helpers;
 
 namespace Larry.Source.Discord.Commands
 {
@@ -43,22 +44,28 @@ namespace Larry.Source.Discord.Commands
             var user = await userRepository.FindByDiscordIdAsync(discordUser.Id.ToString()).ConfigureAwait(false);
             if (user == null)
             {
-                await command.RespondAsync(embed: accountNotFoundEmbed.WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                    .WithCurrentTimestamp().Build()).ConfigureAwait(false);
+                var accountNotFoundEmbed = new EmbedBuilder()
+                    .WithTitle("Account not found")
+                    .WithDescription("User does not have a registered account.")
+                    .WithColor(Color.Red)
+                    .Build();
+
+                await command.FollowupAsync(embed: accountNotFoundEmbed).ConfigureAwait(false);
                 return;
             }
 
             try
             {
                 var waitEmbed = new EmbedBuilder()
-                   .WithTitle("Gathering cosmetics")
-                   .WithDescription("Gathering cosmetics, please wait as this could take a while!")
-                   .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
-                   .WithCurrentTimestamp()
-                   .WithColor(Color.Gold)
-                   .Build();
+                    .WithTitle("Gathering cosmetics")
+                    .WithDescription("Gathering cosmetics, please wait as this could take a while!")
+                    .WithAuthor(command.User.Username, command.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
+                    .WithColor(Color.Gold)
+                    .Build();
+
                 await command.FollowupAsync(embed: waitEmbed).ConfigureAwait(false);
-                await ProfileManager.GrantAll(user.AccountId).ConfigureAwait(false);
+                await ProfileGrants.GrantAll(user.AccountId).ConfigureAwait(false);
 
                 var userEmbed = new EmbedBuilder()
                     .WithTitle("Granted full locker")
@@ -91,8 +98,10 @@ namespace Larry.Source.Discord.Commands
                     .WithCurrentTimestamp()
                     .WithColor(Color.Red)
                     .Build();
+
                 await command.FollowupAsync(embed: errorEmbed).ConfigureAwait(false);
             }
         }
+
     }
 }

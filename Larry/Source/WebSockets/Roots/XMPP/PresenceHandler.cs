@@ -155,7 +155,6 @@ namespace Larry.Source.WebSockets.Roots.XMPP
             if (statusElement == null) return;
 
             object status;
-            Console.WriteLine(statusElement.Value.ToString());
             try
             {
                 status = JsonConvert.DeserializeObject(statusElement.Value.ToString());

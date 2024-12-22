@@ -13,9 +13,6 @@ using Larry.Source.Utilities;
 
 namespace Larry.Source.Database
 {
-    /// <summary>
-    /// Represents a context for interacting with the database, managing connections, and performing CRUD operations.
-    /// </summary>
     public class DatabaseContext : IDisposable
     {
         private readonly string _connectionString;

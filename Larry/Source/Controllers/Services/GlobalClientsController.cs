@@ -20,7 +20,6 @@ namespace Larry.Source.Controllers.Services
                     {
                         client.Value.DisplayName,      
                         client.Value.LastPresenceUpdate,       
-                        client.Value.AccountId,  
                         client.Value.IsAuthenticated,
                         client.Value.IsLoggedIn
                     }
