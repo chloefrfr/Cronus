@@ -166,7 +166,7 @@ namespace Larry.Source.WebSockets.Roots.XMPP
                 return;
             }
 
-            bool isAway = root.Elements().ToList().FindIndex(x => x.Name.LocalName == "show") == 1 ? false : true;
+            bool isAway = root.Elements().ToList().FindIndex(x => x.Name.LocalName == "show") == -1 ? false : true;
 
             await UpdatePresenceForFriend.UpdateAsync(socket, status, false, isAway);
             await GetUserPresence.GetAsync(false, client.AccountId, client.AccountId);
