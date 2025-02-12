@@ -1,6 +1,8 @@
 # Larry
 
 Fortnite Backend written in C# and aims to be very performant.
+<br />
+I'll only update this when i feel like it or im bored
 
 # Getting Started and TODO List
 
